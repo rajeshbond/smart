@@ -8,14 +8,18 @@ import (
 )
 
 type Config struct {
-	DBHOST    string
-	DBPORT    string
-	DBUSER    string
-	DBPASS    string
-	DBNAME    string
-	DBSSL     string
-	APPPORT   string
-	JWTSECRET string
+	DBHOST       string
+	DBPORT       string
+	DBUSER       string
+	DBPASS       string
+	DBNAME       string
+	DBSSL        string
+	APPPORT      string
+	JWTSECRET    string
+	MQTTBROKER   string
+	MQTTCLIENTID string
+	MQTTUSERNAME string
+	MQTTPASSWORD string
 }
 
 func Load() *Config {
@@ -24,14 +28,18 @@ func Load() *Config {
 	_ = godotenv.Load()
 
 	cfg := &Config{
-		DBHOST:    os.Getenv("DB_HOST"),
-		DBPORT:    os.Getenv("DB_PORT"),
-		DBUSER:    os.Getenv("DB_USER"),
-		DBPASS:    os.Getenv("DB_PASS"),
-		DBNAME:    os.Getenv("DB_NAME"),
-		DBSSL:     os.Getenv("DB_SSL"),
-		APPPORT:   os.Getenv("APP_PORT"),
-		JWTSECRET: os.Getenv("JWT_SECRET"),
+		DBHOST:       os.Getenv("DB_HOST"),
+		DBPORT:       os.Getenv("DB_PORT"),
+		DBUSER:       os.Getenv("DB_USER"),
+		DBPASS:       os.Getenv("DB_PASS"),
+		DBNAME:       os.Getenv("DB_NAME"),
+		DBSSL:        os.Getenv("DB_SSL"),
+		APPPORT:      os.Getenv("APP_PORT"),
+		JWTSECRET:    os.Getenv("JWT_SECRET"),
+		MQTTBROKER:   os.Getenv("MQTT_BROKER"),
+		MQTTCLIENTID: os.Getenv("MQTT_CLIENT_ID"),
+		MQTTUSERNAME: os.Getenv("MQTT_USERNAME"),
+		MQTTPASSWORD: os.Getenv("MQTT_PASSWORD"),
 	}
 
 	// -------------------------
@@ -48,6 +56,21 @@ func Load() *Config {
 	if cfg.JWTSECRET == "" {
 		log.Println("WARNING: JWT_SECRET not set → using default (dev only)")
 		cfg.JWTSECRET = "CHANGE_ME_JWT_SECRET"
+	}
+	if cfg.MQTTBROKER == "" {
+		log.Fatal("Missing MQTT_BROKER")
+	}
+
+	if cfg.MQTTCLIENTID == "" {
+		cfg.MQTTCLIENTID = "smart-backend"
+	}
+
+	if cfg.MQTTUSERNAME == "" {
+		log.Fatal("Missing MQTT_USERNAME")
+	}
+
+	if cfg.MQTTPASSWORD == "" {
+		log.Fatal("Missing MQTT_PASSWORD")
 	}
 
 	// -------------------------
