@@ -8,3 +8,5 @@ type IMMTelemetry struct {
 	CycleTime   int     `json:"cycle_time"`
 	Status      string  `json:"status"`
 }
+
+// Test
