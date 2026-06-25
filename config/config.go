@@ -42,6 +42,8 @@ func Load() *Config {
 		MQTTPASSWORD: os.Getenv("MQTT_PASSWORD"),
 	}
 
+
+
 	// -------------------------
 	// Defaults
 	// -------------------------
