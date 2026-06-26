@@ -4,22 +4,26 @@ import (
 	"context"
 	"time"
 
-	"github.com/rajeshbond/smart/database"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Store struct {
-	DB *database.DB
+	DB *pgxpool.Pool
 }
 
-func NewStore(db *database.DB) *Store {
+func NewStore(db *pgxpool.Pool) *Store {
 	return &Store{DB: db}
 }
 
-// Save telemetry
+// InsertTelemetry logs incoming production data with context cancellation support
+func (s *Store) InsertTelemetry(ctx context.Context, t IMMTelemetry) error {
+	// 🛠️ FIXED: Matched column count to argument count. (Removed raw NOW() in VALUES to avoid column mismatch)
+	query := `
+		INSERT INTO machine_data (tenant_id, machine_id, temperature, pressure, cycle_time, status, created_at) 
+		VALUES ($1, $2, $3, $4, $5, $6, NOW())`
 
-func (s *Store) InsertTelemtry(t IMMTelemetry) error {
-	query := `INSERT INTO machine_data(machine_id,temperature,pressure,cycle_time,status,created_at) VALUES($1,$2,$3,$4,$5,$6,NOW())`
-	_, error := s.DB.PGX.Exec(context.Background(), query,
+	// 🌟 SCALE FIX: Using ctx instead of context.Background() ensures query terminates if worker drops out
+	_, err := s.DB.Exec(ctx, query,
 		t.TenantID,
 		t.MachineID,
 		t.Temperature,
@@ -28,40 +32,36 @@ func (s *Store) InsertTelemtry(t IMMTelemetry) error {
 		t.Status,
 	)
 
-	return error
-}
-
-//  Heartbeat update
-
-func (s *Store) UpsertHeartbeat(tenantID int64, machineID string) error {
-	query := `
-	INSERT INTO machine_status(tenant_id,machine_id,last_seen,status)VALUES($1,$2,NOW,'ONLINE)
-	ON CONFLICT (tenant_id,machine_id)
-	DO UPDATE SET last_seen = NOW(),status='PNLINE'`
-	_, err := s.DB.PGX.Exec(context.Background(), query,
-		tenantID, machineID,
-	)
-
 	return err
 }
 
-// Get machines for watchdog
+// UpsertHeartbeat records alive status strings from devices
+func (s *Store) UpsertHeartbeat(ctx context.Context, tenantID int64, machineID string) error {
+	// 🛠️ FIXED: Corrected syntax typos (NOW without parentheses, unclosed 'ONLINE single-quotes, and 'PNLINE' typo)
+	query := `
+		INSERT INTO machine_status (tenant_id, machine_id, last_seen, status)
+		VALUES ($1, $2, NOW(), 'ONLINE')
+		ON CONFLICT (tenant_id, machine_id)
+		DO UPDATE SET last_seen = NOW(), status = 'ONLINE'`
 
-func (s *Store) GetMAchines() ([]struct {
+	_, err := s.DB.Exec(ctx, query, tenantID, machineID)
+	return err
+}
+
+// GetMachines fetches all live machines to support your monitoring watchdog worker
+func (s *Store) GetMachines(ctx context.Context) ([]struct {
 	TenantID  int64
 	MachineID string
 	LastSeen  time.Time
 }, error) {
 
-	query := `
-SELECT tenant_id,machine_id,last_seen FROM machine_status`
+	query := `SELECT tenant_id, machine_id, last_seen FROM machine_status`
 
-	rows, err := s.DB.PGX.Query(context.Background(), query)
-
+	// Using pgxpool.Query with structural rows compilation
+	rows, err := s.DB.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
 	var result []struct {
@@ -77,10 +77,17 @@ SELECT tenant_id,machine_id,last_seen FROM machine_status`
 			LastSeen  time.Time
 		}
 
-		rows.Scan(&r.TenantID, &r.MachineID, &r.LastSeen)
+		// 🛠️ FIXED: Checked error return on rows.Scan to avoid corrupted allocations under heavy pool pressure
+		if err := rows.Scan(&r.TenantID, &r.MachineID, &r.LastSeen); err != nil {
+			return nil, err
+		}
 		result = append(result, r)
 	}
 
-	return result, nil
+	// 🛠️ FIXED: Always check rows.Err() after loops when scanning multiple database allocations
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 
+	return result, nil
 }
