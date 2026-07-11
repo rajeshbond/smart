@@ -11,4 +11,5 @@ const (
 
 	// TopicCommand = "factory/assembly/command/+"
 
+	TopicCommand = "factory/assembly/command/"
 )

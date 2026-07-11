@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/rajeshbond/smart/internal/http/command"
 )
 
 func NewRouter(app *App) http.Handler {
@@ -34,6 +35,9 @@ func NewRouter(app *App) http.Handler {
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	commandModule := command.NewModule(app.MQTTClient)
+	r.Mount("/api/v1/assembly-command", commandModule.Router())
 
 	return r
 }
