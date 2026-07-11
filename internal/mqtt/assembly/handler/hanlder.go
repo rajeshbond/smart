@@ -49,11 +49,12 @@ func (h *ProductionHandler) ProductionHandler() paho.MessageHandler {
 
 				return
 			}
-
+			// fmt.Println(req)
 			log.Printf(
-				"Production Saved : %s Count=%d",
+				"Production Saved : %s Count=%d station=%s",
 				req.DeviceID,
 				req.Count,
+				req.Station,
 			)
 
 		}(payload)
