@@ -9,5 +9,6 @@ const (
 
 	TopicAlarm = "factory/assembly/alarm/+"
 
-	TopicCommand = "factory/assembly/command/+"
+	// TopicCommand = "factory/assembly/command/+"
+
 )
