@@ -21,7 +21,7 @@ func (s *CommandService) ResetCounter(
 	ctx context.Context,
 	req dto.ResetCounterRequest,
 ) error {
-	command := dto.CommandDTO{
+	command := CommandDTO{
 		Command:    "RESET_COUNTER",
 		TenantID:   req.TenantID,
 		CustomerID: req.CustomerID,

@@ -22,7 +22,7 @@ func (m *Module) Router() chi.Router {
 		// r.Use(auth.Authenticator(m.tokenAuth))
 		// r.Use(auth.UserContextInjector)
 
-		r.Post("/rest-counter", m.Handler.ResetCounterHandler)
+		r.Post("/reset-counter", m.Handler.ResetCounterHandler)
 	})
 
 	return r

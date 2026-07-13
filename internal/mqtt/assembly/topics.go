@@ -1,7 +1,7 @@
 package assembly
 
 const (
-	TopicProduction = "factory/assembly/production/+"
+	TopicProduction = "factory/assembly/assly_production/+"
 
 	TopicHeartbeat = "factory/assembly/heartbeat/+"
 

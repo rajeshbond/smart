@@ -2,6 +2,7 @@ package command
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	dto "github.com/rajeshbond/smart/internal/mqtt/assembly/production_dto"
@@ -31,7 +32,7 @@ func (h *Handler) ResetCounterHandler(
 
 		return
 	}
-
+	fmt.Println(req)
 	if err := h.commandService.ResetCounter(ctx, req); err != nil {
 		http.Error(
 			w,
