@@ -112,3 +112,29 @@ func IsTenatAdminRole(reqRole string) bool {
 	fmt.Println("Bool value", ok)
 	return ok
 }
+
+// Check is Xoomgrid superAdmin or Admin
+
+func IsXoodGridAdmin(reqRole string) bool {
+
+	allowedRoles := map[string]struct{}{
+		"superadmin": {},
+		"xoomadmin":  {},
+	}
+
+	_, ok := allowedRoles[reqRole]
+
+	return ok
+}
+
+func IsXoomGridUser(reqRole string) bool {
+	allowedRoles := map[string]struct{}{
+		"superadmin": {},
+		"xoomadmin":  {},
+		"xoomuser":   {},
+	}
+
+	_, ok := allowedRoles[reqRole]
+
+	return ok
+}

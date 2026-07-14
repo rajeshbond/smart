@@ -36,7 +36,7 @@ func (h *Handler) CreateUserRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !auth.IsTenatAdminRole(claims.Role) {
+	if !auth.IsXoodGridAdmin(claims.Role) {
 		response.Error(w, http.StatusUnauthorized, response.NotAuthorized)
 		return
 	}
@@ -75,7 +75,7 @@ func (h *Handler) CreateUserRole(w http.ResponseWriter, r *http.Request) {
 
 // Get Role String by Id (passed from params as string)
 
-func (h *Handler) GetUserRoleByName(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetUserRoleIDByName(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 

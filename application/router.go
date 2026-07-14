@@ -6,8 +6,9 @@ package application
 // 1.User Role
 // 2.Tenant
 
-// .Command for MQTT Clients (esp 32)
-
+// =======Command for MQTT Clients (esp 32)========
+// MQTT Esp 32 reset count
+// ================================================
 //////////////////////////////////////////////
 import (
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"github.com/rajeshbond/smart/internal/http/command"
 	"github.com/rajeshbond/smart/internal/http/tenant"
 	userrole "github.com/rajeshbond/smart/internal/http/user_role"
+	"github.com/rajeshbond/smart/internal/http/users"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -68,14 +70,21 @@ func NewRouter(app *App) http.Handler {
 	userRoleModule := userrole.NewModule(app.DB.SQLDB, tokenAuth)
 	r.Mount("/user-role", userRoleModule.Router())
 
-	commandModule := command.NewModule(app.MQTTClient)
-	r.Mount("/api/v1/assembly-command", commandModule.Router())
-
 	// 2.Tenant---->
 
 	tenantModule := tenant.NewModule(app.DB.SQLDB, tokenAuth)
 	r.Mount("/tenant", tenantModule.Router())
 
+	//3. Users
+	usersModule := users.NewModule(app.DB.SQLDB, tokenAuth, userRoleModule.Service, tenantModule.Service)
+	r.Mount("/users", usersModule.Router())
+
+	// Route Mounts Ends here <---------------
+
+	// MQTT Commands ----->(MQTT)
+
+	commandModule := command.NewModule(app.MQTTClient)
+	r.Mount("/api/v1/assembly-command", commandModule.Router())
 	// ================================================================
 	// Mouldes mounting (Ends)
 	// ================================================================
