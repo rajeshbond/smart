@@ -1,12 +1,25 @@
 package application
 
+//////////////////////////////////////////////
+// Packages Mounted
+//////////////////////////////////////////////
+// 1.User Role
+// 2.Tenant
+
+// .Command for MQTT Clients (esp 32)
+
+//////////////////////////////////////////////
 import (
 	"net/http"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/rajeshbond/smart/cmd/service"
 	"github.com/rajeshbond/smart/internal/http/command"
+	"github.com/rajeshbond/smart/internal/http/tenant"
+	userrole "github.com/rajeshbond/smart/internal/http/user_role"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func NewRouter(app *App) http.Handler {
@@ -36,8 +49,36 @@ func NewRouter(app *App) http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	// Health check
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Health Ok"))
+	})
+
+	// Swagger
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
+
+	tokenAuth := service.GetTokenAuth()
+
+	// ================================================================
+	// Mouldes mounting (Starts)
+	// ================================================================
+
+	// 1.User Role---->
+
+	userRoleModule := userrole.NewModule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/user-role", userRoleModule.Router())
+
 	commandModule := command.NewModule(app.MQTTClient)
 	r.Mount("/api/v1/assembly-command", commandModule.Router())
+
+	// 2.Tenant---->
+
+	tenantModule := tenant.NewModule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/tenant", tenantModule.Router())
+
+	// ================================================================
+	// Mouldes mounting (Ends)
+	// ================================================================
 
 	return r
 }
