@@ -1,9 +1,17 @@
 package auth
 
 const (
-	RoleSuperAdmin  = "superadmin"
-	RoleAdmin       = "admin"
-	RoleTenantAdmin = "tenantadmin"
-	RoleTenantOwner = "tenantowner"
-	RoleUser        = "user"
+	RoleSuperAdmin = "superadmin"
+	RoleXoomAdmin  = "xoomadmin"
+	RoleXoomUser   = "xoomuser"
+
+	RoleDistributorAdmin   = "distributoradmin"
+	RoleDistributorService = "distributorservice"
+	RoleDistributorUser    = "distributoruser"
+
+	RoleTenantAdmin       = "tenantadmin"
+	RoleTenantSupervisor  = "tenantsupervisor"
+	RoleTenantMaintenance = "tenantmaintenance"
+	RoleTenantOperator    = "tenantoperator"
+	RoleTenantViewer      = "tenantviewer"
 )

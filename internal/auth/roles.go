@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-// func IsSuper(role string) bool {
-// 	return role == "admin" || role == "superadmin"
-// }
+func IsSuper(role string) bool {
+	return role == RoleXoomAdmin || role == RoleSuperAdmin
+}
 
 func ValidateTenantAccess(role, claimsEmpID, reqEmpID string) error {
 
@@ -55,27 +55,27 @@ func Tcode(employee_id string) (string, error) {
 
 // Function Validate Tenant ID with Tenant code
 
-func ValidateTenantAccesswithTenantCode(role string, claimsTenantID, reqTenantID int64) error {
+// func ValidateTenantAccesswithTenantCode(role string, claimsTenantID, reqTenantID int64) error {
 
-	switch role {
+// 	switch role {
 
-	case RoleSuperAdmin, RoleAdmin:
-		// Full Access
-		return nil
+// 	case RoleSuperAdmin, RoleAdmin:
+// 		// Full Access
+// 		return nil
 
-	case RoleTenantAdmin, RoleTenantOwner:
-		// Restricted to own tenant
-		if claimsTenantID != reqTenantID {
-			fmt.Println("Rajesh failed ")
-			return ErrTenantMismatch
-		}
+// 	case RoleTenantAdmin, RoleTenantOwner:
+// 		// Restricted to own tenant
+// 		if claimsTenantID != reqTenantID {
+// 			fmt.Println("Rajesh failed ")
+// 			return ErrTenantMismatch
+// 		}
 
-		return nil // ✅ IMPORTANT FIX
+// 		return nil // ✅ IMPORTANT FIX
 
-	default:
-		return ErrUnauthorized
-	}
-}
+// 	default:
+// 		return ErrUnauthorized
+// 	}
+// }
 
 func TenantRoleCheck(role string) error {
 	switch role {
@@ -92,13 +92,13 @@ type Role string
 
 var superRoles = map[Role]struct{}{
 	RoleSuperAdmin: {},
-	RoleAdmin:      {},
+	RoleXoomAdmin:  {},
 }
 
-func IsSuper(role string) bool {
-	_, exists := superRoles[Role(strings.ToLower(role))]
-	return exists
-}
+// func IsSuper(role string) bool {
+// 	_, exists := superRoles[Role(strings.ToLower(role))]
+// 	return exists
+// }
 
 func IsTenatAdminRole(reqRole string) bool {
 	fmt.Print("Inside isTenanat Admin ", reqRole)
@@ -132,6 +132,30 @@ func IsXoomGridUser(reqRole string) bool {
 		"superadmin": {},
 		"xoomadmin":  {},
 		"xoomuser":   {},
+	}
+
+	_, ok := allowedRoles[reqRole]
+
+	return ok
+}
+
+func IsDistributorAdmin(reqRole string) bool {
+	allowedRoles := map[string]struct{}{
+		"distributor":      {},
+		"distributoradmin": {},
+	}
+
+	_, ok := allowedRoles[reqRole]
+
+	return ok
+}
+
+func IsDistributorRole(reqRole string) bool {
+	allowedRoles := map[string]struct{}{
+		"distributor":        {},
+		"distributoradmin":   {},
+		"distributorservice": {},
+		"distributoruser":    {},
 	}
 
 	_, ok := allowedRoles[reqRole]
