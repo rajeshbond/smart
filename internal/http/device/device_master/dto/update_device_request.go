@@ -1,28 +1,98 @@
+/******************************************************************************
+ *
+ * MODULE      : Device Master
+ * FILE        : update.go
+ *
+ * DESCRIPTION :
+ * Update Device DTO
+ *
+ ******************************************************************************/
+
 package dto
 
+import "time"
+
 type UpdateDeviceRequest struct {
-	Model           *string `json:"model,omitempty"`
+
+	//-------------------------------------------------------------------------
+	// Device Information
+	//-------------------------------------------------------------------------
+
+	Model string `json:"model"`
+
 	HardwareVersion *string `json:"hardware_version,omitempty"`
+
 	FirmwareVersion *string `json:"firmware_version,omitempty"`
 
-	MQTTUsername *string `json:"mqtt_username,omitempty"`
-	MQTTPassword *string `json:"mqtt_password,omitempty"`
+	ManufacturedAt *time.Time `json:"manufactured_at,omitempty"`
 
-	SoftAPSSID     *string `json:"softap_ssid,omitempty"`
-	SoftAPPassword *string `json:"softap_password,omitempty"`
+	//-------------------------------------------------------------------------
+	// Factory Provisioning
+	//-------------------------------------------------------------------------
 
-	DeviceSecret *string `json:"device_secret,omitempty"`
+	MQTTUsername string `json:"mqtt_username"`
+
+	MQTTPassword string `json:"mqtt_password"`
+
+	SoftAPSSID string `json:"softap_ssid"`
+
+	SoftAPPassword string `json:"softap_password"`
+
+	DeviceSecret string `json:"device_secret"`
 
 	ChipID *string `json:"chip_id,omitempty"`
 
-	MACAddressWiFi     *string `json:"mac_address_wifi,omitempty"`
+	MACAddressWiFi *string `json:"mac_address_wifi,omitempty"`
+
 	MACAddressEthernet *string `json:"mac_address_ethernet,omitempty"`
 
-	CommunicationType *string `json:"communication_type,omitempty"`
+	//-------------------------------------------------------------------------
+	// Device
+	//-------------------------------------------------------------------------
 
-	DeviceStatus *string `json:"device_status,omitempty"`
+	CommunicationType string `json:"communication_type"`
 
-	IsActive *bool `json:"is_active,omitempty"`
+	DeviceStatus string `json:"device_status"`
+
+	IsActive bool `json:"is_active"`
 
 	Notes *string `json:"notes,omitempty"`
+}
+
+type UpdateDeviceDTO struct {
+	ID int64
+
+	Model string
+
+	HardwareVersion *string
+
+	FirmwareVersion *string
+
+	ManufacturedAt *time.Time
+
+	MQTTUsername string
+
+	MQTTPassword string
+
+	SoftAPSSID string
+
+	SoftAPPassword string
+
+	DeviceSecret string
+
+	ChipID *string
+
+	MACAddressWiFi *string
+
+	MACAddressEthernet *string
+
+	CommunicationType string
+
+	DeviceStatus string
+
+	IsActive bool
+
+	Notes *string
+
+	UpdatedBy int64
 }

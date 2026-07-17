@@ -1,18 +1,12 @@
 package store
 
-import (
-	"context"
-
-	"github.com/rajeshbond/smart/internal/http/device/device_master/model"
-)
-
-type Store interface {
-	Create(ctx context.Context, device *model.Device) (int64, error)
-	// Update(ctx context.Context, device *model.Device) error
-	// Delete(ctx context.Context, id int64, updatedBy int64) error
-	// Count(ctx context.Context, filter dto.DeviceFilter) (int64, error)
-
-}
+// type Store interface {
+// 	Create(ctx context.Context, device *model.Device) (int64, error)
+// 	Update(ctx context.Context, device *model.Device) error
+// 	ExistsByDeviceID(ctx context.Context, deviceID string) (bool, error)
+// 	// Delete(ctx context.Context, id int64, updatedBy int64) error
+// 	Count(ctx context.Context, filter dto.DeviceFilter) (int64, error)
+// }
 
 // import (
 // 	"context"
