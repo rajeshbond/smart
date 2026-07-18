@@ -92,10 +92,10 @@ func TenantRoleCheck(role string) error {
 
 type Role string
 
-var superRoles = map[Role]struct{}{
-	permission.RoleSuperAdmin: {},
-	permission.RoleXoomAdmin:  {},
-}
+// var superRoles = map[Role]struct{}{
+// 	permission.RoleSuperAdmin: {},
+// 	permission.RoleXoomAdmin:  {},
+// }
 
 // func IsSuper(role string) bool {
 // 	_, exists := superRoles[Role(strings.ToLower(role))]

@@ -178,3 +178,41 @@ func ToGetResponse(
 		Notes: device.Notes,
 	}
 }
+
+func ToListItem(
+	device *model.Device,
+) dto.DeviceListItem {
+
+	return dto.DeviceListItem{
+		ID:                device.ID,
+		DeviceID:          device.DeviceID,
+		SerialNumber:      device.SerialNumber,
+		Model:             device.Model,
+		HardwareVersion:   utils.StringValue(device.HardwareVersion),
+		FirmwareVersion:   utils.StringValue(device.FirmwareVersion),
+		CommunicationType: device.CommunicationType,
+		DeviceStatus:      device.DeviceStatus,
+		IsActive:          device.IsActive,
+		ChipID:            utils.StringValue(device.ChipID),
+		LastSeenAt:        device.LastSeenAt,
+		CreatedAt:         utils.TimePtr(&device.CreatedAt),
+	}
+}
+
+// To List
+
+func ToListItems(
+	devices []model.Device,
+) []dto.DeviceListItem {
+
+	items := make([]dto.DeviceListItem, 0, len(devices))
+
+	for i := range devices {
+		items = append(
+			items,
+			ToListItem(&devices[i]),
+		)
+	}
+
+	return items
+}

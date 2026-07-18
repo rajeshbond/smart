@@ -1,6 +1,8 @@
 package permission
 
-import "strings"
+import (
+	"strings"
+)
 
 func CanCreateDevice(role string) bool {
 	switch strings.ToLower(role) {
@@ -20,8 +22,8 @@ func CanDeleteDevice(role string) bool {
 	switch strings.ToLower(role) {
 
 	case
-		RoleSuperAdmin:
-
+		RoleSuperAdmin,
+		RoleXoomAdmin:
 		return true
 	}
 
@@ -56,6 +58,37 @@ func CanUpdateDevice(role string) bool {
 		RoleDistributorAdmin,
 		RoleTenantAdmin:
 
+		return true
+	}
+
+	return false
+}
+
+func HasPermission(
+	role string,
+	requiredPermission string,
+) bool {
+
+	role = strings.ToLower(strings.TrimSpace(role))
+
+	permissions, ok := rolePermissions[role]
+	if !ok {
+		return false
+	}
+
+	_, ok = permissions[requiredPermission]
+
+	return ok
+}
+
+func CanListDevice(role string) bool {
+
+	switch strings.ToLower(role) {
+
+	case
+		RoleSuperAdmin,
+		RoleXoomAdmin,
+		RoleXoomUser:
 		return true
 	}
 
