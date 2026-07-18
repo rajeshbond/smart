@@ -13,6 +13,8 @@ firmware_version VARCHAR(20),
 manufactured_at TIMESTAMP,
 
 -- Factory Provisioning
+
+
 mqtt_username           VARCHAR(100) NOT NULL UNIQUE,
     mqtt_password           VARCHAR(255) NOT NULL,
 
@@ -32,7 +34,7 @@ mqtt_username           VARCHAR(100) NOT NULL UNIQUE,
 
     last_seen_at            TIMESTAMP,
 
-    is_active               BOOLEAN NOT NULL DEFAULT TRUE,
+    is_active               BOOLEAN NOT NULL DEFAULT FALSE,
     is_deleted              BOOLEAN NOT NULL DEFAULT FALSE,
 
     notes                   TEXT,

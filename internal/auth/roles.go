@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/rajeshbond/smart/internal/auth/permission"
 )
 
 func IsSuper(role string) bool {
-	return role == RoleXoomAdmin || role == RoleSuperAdmin
+	return role == permission.RoleXoomAdmin || role == permission.RoleSuperAdmin
 }
 
 func ValidateTenantAccess(role, claimsEmpID, reqEmpID string) error {
@@ -91,8 +93,8 @@ func TenantRoleCheck(role string) error {
 type Role string
 
 var superRoles = map[Role]struct{}{
-	RoleSuperAdmin: {},
-	RoleXoomAdmin:  {},
+	permission.RoleSuperAdmin: {},
+	permission.RoleXoomAdmin:  {},
 }
 
 // func IsSuper(role string) bool {

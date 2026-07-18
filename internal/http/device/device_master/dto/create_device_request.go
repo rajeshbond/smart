@@ -96,6 +96,8 @@ type CreateDeviceDTO struct {
 
 	CommunicationType string
 
+	IsActive *bool
+
 	DeviceStatus string
 
 	Notes *string
@@ -103,4 +105,20 @@ type CreateDeviceDTO struct {
 	CreatedBy int64
 
 	UpdatedBy int64
+}
+
+type CreateDeviceResponse struct {
+	ID                int64      `json:"id"`
+	DeviceID          string     `json:"device_id"`
+	SerialNumber      string     `json:"serial_number"`
+	Model             string     `json:"model"`
+	HardwareVersion   string     `json:"hardware_version,omitempty"`
+	FirmwareVersion   string     `json:"firmware_version,omitempty"`
+	CommunicationType string     `json:"communication_type"`
+	DeviceStatus      string     `json:"device_status"`
+	ChipID            string     `json:"chip_id,omitempty"`
+	IsActive          bool       `json:"is_active"`
+	ManufacturedAt    *time.Time `json:"manufactured_at,omitempty"`
+	CreatedAt         *time.Time `json:"created_at,omitempty"`
+	Message           string     `json:"message"`
 }

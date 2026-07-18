@@ -12,7 +12,7 @@ package dto
 
 import "time"
 
-type DeviceResponse struct {
+type GetDeviceResponse struct {
 
 	//-------------------------------------------------------------------------
 	// Primary Key

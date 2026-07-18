@@ -26,6 +26,10 @@ type UpdateDeviceRequest struct {
 
 	ManufacturedAt *time.Time `json:"manufactured_at,omitempty"`
 
+	MacAddressWiFi *string `json:"mac_address_wifi,omitempty"`
+
+	MacAddressEthernet *string `json:"mac_address_ethernet,omitempty"`
+
 	//-------------------------------------------------------------------------
 	// Factory Provisioning
 	//-------------------------------------------------------------------------
@@ -41,10 +45,6 @@ type UpdateDeviceRequest struct {
 	DeviceSecret string `json:"device_secret"`
 
 	ChipID *string `json:"chip_id,omitempty"`
-
-	MACAddressWiFi *string `json:"mac_address_wifi,omitempty"`
-
-	MACAddressEthernet *string `json:"mac_address_ethernet,omitempty"`
 
 	//-------------------------------------------------------------------------
 	// Device
@@ -95,4 +95,18 @@ type UpdateDeviceDTO struct {
 	Notes *string
 
 	UpdatedBy int64
+}
+
+type UpdateDeviceResponse struct {
+	ID                int64      `json:"id"`
+	DeviceID          string     `json:"device_id"`
+	SerialNumber      string     `json:"serial_number"`
+	Model             string     `json:"model"`
+	HardwareVersion   string     `json:"hardware_version,omitempty"`
+	FirmwareVersion   string     `json:"firmware_version,omitempty"`
+	CommunicationType string     `json:"communication_type"`
+	DeviceStatus      string     `json:"device_status"`
+	IsActive          bool       `json:"is_active"`
+	UpdatedAt         *time.Time `json:"updated_at,omitempty"`
+	Message           string     `json:"message"`
 }

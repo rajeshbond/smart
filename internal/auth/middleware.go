@@ -89,6 +89,26 @@ func HasPermission(userPermission []string, permission string) bool {
 	return false
 }
 
+//------------------------------------------------------------------------------
+// Must Get User Claims
+//------------------------------------------------------------------------------
+
+func MustUserClaims(
+	ctx context.Context,
+) (*UserClaims, error) {
+
+	claims, ok := GetUserClaimsFromContext(ctx)
+	if !ok {
+		return nil, ErrUnauthorized
+	}
+
+	if claims == nil {
+		return nil, ErrUnauthorized
+	}
+
+	return claims, nil
+}
+
 // UserContextInjector reads claims and injects userID
 // func UserContextInjector(next http.Handler) http.Handler {
 // 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

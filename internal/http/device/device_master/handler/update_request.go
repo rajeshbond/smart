@@ -1,10 +1,10 @@
 /******************************************************************************
  *
  * MODULE      : Device Master
- * FILE        : create.go
+ * FILE        : update.go
  *
  * DESCRIPTION :
- * Create Device Handler
+ * Update Device Handler
  *
  ******************************************************************************/
 
@@ -13,6 +13,9 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/rajeshbond/smart/internal/auth"
 	"github.com/rajeshbond/smart/internal/auth/permission"
@@ -22,10 +25,10 @@ import (
 )
 
 //------------------------------------------------------------------------------
-// Create Device
+// Update Device
 //------------------------------------------------------------------------------
 
-func (h *Handler) Create(
+func (h *Handler) Update(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
@@ -38,11 +41,13 @@ func (h *Handler) Create(
 
 	claims, err := auth.MustUserClaims(ctx)
 	if err != nil {
+
 		response.Error(
 			w,
 			http.StatusUnauthorized,
 			auth.UnAuthorised,
 		)
+
 		return
 	}
 
@@ -50,55 +55,25 @@ func (h *Handler) Create(
 	// Authorization
 	//----------------------------------------------------------------------
 
-	if !permission.CanCreateDevice(claims.Role) {
+	if !permission.CanUpdateDevice(claims.Role) {
+
 		response.Error(
 			w,
 			http.StatusForbidden,
 			auth.PermissionDenied.Error(),
 		)
+
 		return
 	}
 
 	//----------------------------------------------------------------------
-	// Validate Request
+	// Parse ID
 	//----------------------------------------------------------------------
 
-	if r.Body == nil {
-		response.Error(
-			w,
-			http.StatusBadRequest,
-			"request body is required",
-		)
-		return
-	}
-
-	//----------------------------------------------------------------------
-	// Decode Request DTO
-	//----------------------------------------------------------------------
-
-	var req dto.CreateDeviceRequest
-
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-
-	if err := decoder.Decode(&req); err != nil {
-		response.Error(
-			w,
-			http.StatusBadRequest,
-			err.Error(),
-		)
-		return
-	}
-
-	//----------------------------------------------------------------------
-	// Map DTO -> Model
-	//----------------------------------------------------------------------
-
-	device := mapper.ToModelForCreate(req, claims.UserID)
-
-	id, err := h.service.Create(
-		ctx,
-		device,
+	id, err := strconv.ParseInt(
+		chi.URLParam(r, "id"),
+		10,
+		64,
 	)
 
 	if err != nil {
@@ -106,17 +81,59 @@ func (h *Handler) Create(
 		response.Error(
 			w,
 			http.StatusBadRequest,
+			"invalid device id",
+		)
+
+		return
+	}
+
+	//----------------------------------------------------------------------
+	// Decode Request
+	//----------------------------------------------------------------------
+
+	var req dto.UpdateDeviceRequest
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&req); err != nil {
+
+		response.Error(
+			w,
+			http.StatusBadRequest,
 			err.Error(),
 		)
 
 		return
 	}
 
-	device.ID = id
-
 	//----------------------------------------------------------------------
-	// Success
+	// DTO -> Model
 	//----------------------------------------------------------------------
 
-	response.JSON(w, http.StatusCreated, mapper.ToCreateResponse(device))
+	device := mapper.ToModelForUpdate(id, req, claims.UserID)
+
+	//----------------------------------------------------------------------
+	// Service
+	//----------------------------------------------------------------------
+
+	if err := h.service.Update(
+		ctx,
+		device,
+	); err != nil {
+
+		response.Error(
+			w,
+			http.StatusBadRequest,
+			err.Error(),
+		)
+
+		return
+	}
+
+	//----------------------------------------------------------------------
+	// Response
+	//----------------------------------------------------------------------
+
+	response.JSON(w, http.StatusOK, mapper.ToUpdateResponse(device))
 }

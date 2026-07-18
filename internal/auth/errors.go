@@ -7,4 +7,5 @@ var (
 	ErrTenantMismatch = errors.New("tenant mismatch: not allowed for other tenant")
 	ErrForbidden      = errors.New("forbidden")
 	ErrBadRequest     = errors.New("Bad Json request")
+	PermissionDenied  = errors.New("Not Authorised to perform this operation")
 )

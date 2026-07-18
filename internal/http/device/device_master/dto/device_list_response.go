@@ -1,7 +1,7 @@
 package dto
 
 type DeviceListResponse struct {
-	Items []DeviceResponse `json:"items"`
+	Items []GetDeviceResponse `json:"items"`
 
 	Page int `json:"page"`
 

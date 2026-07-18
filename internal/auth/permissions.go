@@ -35,3 +35,16 @@ const (
 	// Roles
 	PermissionRoleManage = "ROLE_MANAGE"
 )
+
+// const (
+// 	RoleSuperAdmin = "superadmin"
+// 	RoleXoomAdmin  = "xoomadmin"
+// 	RoleXoomUser   = "xoomuser"
+
+// 	RoleDistributorAdmin = "distributoradmin"
+// 	RoleDistributorUser  = "distributoruser"
+
+// 	RoleTenantAdmin      = "tenantadmin"
+// 	RoleTenantSupervisor = "tenantsupervisor"
+// 	RoleTenantOperator   = "tenantoperator"
+// )

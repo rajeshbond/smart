@@ -1,16 +1,18 @@
 package auth
 
+import "github.com/rajeshbond/smart/internal/auth/permission"
+
 func IsSuperAdmin(role string) bool {
 
-	return role == RoleSuperAdmin
+	return role == permission.RoleSuperAdmin
 
 }
 
 func IsDistributor(role string) bool {
 	switch role {
-	case RoleDistributorAdmin,
-		RoleDistributorService,
-		RoleDistributorUser:
+	case permission.RoleDistributorAdmin,
+		permission.RoleDistributorService,
+		permission.RoleDistributorUser:
 		return true
 	}
 	return false
@@ -18,11 +20,11 @@ func IsDistributor(role string) bool {
 
 func IsTenant(role string) bool {
 	switch role {
-	case RoleTenantAdmin,
-		RoleTenantSupervisor,
-		RoleTenantMaintenance,
-		RoleTenantOperator,
-		RoleTenantViewer:
+	case permission.RoleTenantAdmin,
+		permission.RoleTenantSupervisor,
+		permission.RoleTenantMaintenance,
+		permission.RoleTenantOperator,
+		permission.RoleTenantViewer:
 
 		return true
 	}
