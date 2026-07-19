@@ -81,6 +81,14 @@ func NewRouter(app *App) http.Handler {
 
 	// Route Mounts Ends here <---------------
 
+	// 4. Device master
+	//==============================================================
+	// Device Master
+	//==============================================================
+
+	// deviceMasterModule = devicemaster.NewModule(app.DB.SQLDB, app.Config, tokenAuth)
+	// r.Mount("/device-master", deviceMasterModule.RegisterRoutes())
+
 	// MQTT Commands ----->(MQTT)
 
 	commandModule := command.NewModule(app.MQTTClient)

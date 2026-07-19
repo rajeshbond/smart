@@ -918,3 +918,21 @@ WHERE
 	id = $1
 	AND is_deleted = FALSE;
 `
+
+// -----------------------------------------------------------------------------
+// UPDATE MQTT REGISTRATION
+// -----------------------------------------------------------------------------
+
+const UpdateMQTTRegistration = `
+UPDATE device_master
+SET
+    mqtt_registration_status = :mqtt_registration_status,
+    mqtt_registered_at       = :mqtt_registered_at,
+    mqtt_registered_by       = :mqtt_registered_by,
+    updated_by               = :updated_by,
+    updated_at               = CURRENT_TIMESTAMP
+WHERE
+    device_id = :device_id
+AND
+    is_deleted = FALSE;
+`

@@ -13,6 +13,7 @@ package store
 import (
 	"context"
 
+
 	"github.com/rajeshbond/smart/internal/http/device/device_master/model"
 )
 
@@ -41,3 +42,13 @@ func (s *Store) Create(
 
 	return id, nil
 }
+
+// func (s *Store) BeginTx(
+// 	ctx context.Context,
+// ) (*sqlx.Tx, error) {
+
+// 	return s.db.BeginTxx(
+// 		ctx,
+// 		nil,
+// 	)
+// }

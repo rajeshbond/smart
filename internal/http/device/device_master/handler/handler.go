@@ -22,11 +22,11 @@ type Handler struct {
 
 func NewHandler(
 	service *service.Service,
-	tokenAuth jwtauth.JWTAuth,
+	tokenAuth *jwtauth.JWTAuth,
 ) *Handler {
 
 	return &Handler{
 		service:   service,
-		tokenAuth: &tokenAuth,
+		tokenAuth: tokenAuth,
 	}
 }

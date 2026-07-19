@@ -23,3 +23,8 @@ const (
 
 	StatusRetired = "RETIRED"
 )
+const (
+	MQTTStatusPending    = "PENDING"
+	MQTTStatusRegistered = "REGISTERED"
+	MQTTStatusFailed     = "FAILED"
+)
