@@ -3,15 +3,13 @@
  * MODULE      : Device Master
  * FILE        : service.go
  *
- * DESCRIPTION :
- * Device Master Service
- *
  ******************************************************************************/
 
 package service
 
 import (
 	"github.com/rajeshbond/smart/internal/http/device/device_master/store"
+	"github.com/rajeshbond/smart/internal/mqtt/mqttadmin"
 )
 
 //------------------------------------------------------------------------------
@@ -20,6 +18,8 @@ import (
 
 type Service struct {
 	store *store.Store
+
+	mqtt mqttadmin.Service
 }
 
 //------------------------------------------------------------------------------
@@ -28,9 +28,13 @@ type Service struct {
 
 func NewService(
 	store *store.Store,
+	mqtt mqttadmin.Service,
 ) *Service {
 
 	return &Service{
+
 		store: store,
+
+		mqtt: mqtt,
 	}
 }
