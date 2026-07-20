@@ -14,6 +14,7 @@ SELECT
 FROM assembly_production_log
 WHERE tenant_id = $1
   AND device_id = $2
+  AND ($3 = '' OR station = $3)
 ORDER BY created_at DESC
-LIMIT 5;
+LIMIT $4;
 `

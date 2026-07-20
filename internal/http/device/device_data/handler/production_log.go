@@ -69,6 +69,10 @@ func (h *Handler) GetProductionLogByTenantIDAndDeviceID(
 		return
 	}
 
+	if req.Limit <= 0 {
+		req.Limit = 1
+	}
+
 	//----------------------------------------------------------
 	// Service
 	//----------------------------------------------------------

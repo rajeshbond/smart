@@ -7,7 +7,7 @@ import (
 )
 
 func (s *Store) GetByTenantAndDeviceID(ctx context.Context, req dto.GetProductionRequest) ([]dto.ProductionResponse, error) {
-	rows, err := s.db.QueryContext(ctx, GetLatestProductionByDevice, req.TenantID, req.DeviceID)
+	rows, err := s.db.QueryContext(ctx, GetLatestProductionByDevice, req.TenantID, req.DeviceID, req.Station, req.Limit)
 
 	if err != nil {
 		return nil, err

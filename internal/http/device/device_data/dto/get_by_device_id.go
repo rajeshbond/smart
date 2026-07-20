@@ -5,6 +5,8 @@ import "time"
 type GetProductionRequest struct {
 	TenantID string `json:"tenant_id"`
 	DeviceID string `json:"device_id"`
+	Station  string `json:"station,omitempty"`
+	Limit    int    `json:"limit"`
 }
 
 type ProductionResponse struct {
