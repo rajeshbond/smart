@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 
@@ -11,48 +10,48 @@ import (
 	"github.com/rajeshbond/smart/internal/http/device/device_data/dto"
 )
 
-func (h *Handler) GetProductionLogByTenantIDAndDeviceID(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetProductionLogByTenantIDAndDeviceID(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
 	ctx := r.Context()
 
-	//----------------------------------------------------------------------
+	//----------------------------------------------------------
 	// Authentication
-	//----------------------------------------------------------------------
+	//----------------------------------------------------------
 
 	claims, err := auth.MustUserClaims(ctx)
+
 	if err != nil {
+
 		response.Error(
 			w,
 			http.StatusUnauthorized,
 			auth.UnAuthorised,
 		)
+
 		return
 	}
 
-	//----------------------------------------------------------------------
+	//----------------------------------------------------------
 	// Authorization
-	//----------------------------------------------------------------------
+	//----------------------------------------------------------
 
 	if !permission.CanCreateDevice(claims.Role) {
+
 		response.Error(
 			w,
 			http.StatusForbidden,
 			auth.PermissionDenied.Error(),
 		)
+
 		return
 	}
 
-	//----------------------------------------------------------------------
-	// Validate Request
-	//----------------------------------------------------------------------
-
-	if r.Body == nil {
-		response.Error(
-			w,
-			http.StatusBadRequest,
-			"request body is required",
-		)
-		return
-	}
+	//----------------------------------------------------------
+	// Decode Request
+	//----------------------------------------------------------
 
 	var req dto.GetProductionRequest
 
@@ -60,43 +59,54 @@ func (h *Handler) GetProductionLogByTenantIDAndDeviceID(w http.ResponseWriter, r
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&req); err != nil {
+
 		response.Error(
 			w,
 			http.StatusBadRequest,
 			err.Error(),
 		)
+
 		return
 	}
 
-	//----------------------------------------------------------------------
-	// Fetch Fresh (latest) Production Log
-	//----------------------------------------------------------------------
+	//----------------------------------------------------------
+	// Service
+	//----------------------------------------------------------
 
-	resp, err := h.Service.GetProductionLogByTenantIDAndDeviceID(ctx, req.DeviceID, req.TenantID)
+	items, err := h.Service.GetProductionLogByTenantIDAndDeviceID(
+		ctx,
+		req,
+	)
 
 	if err != nil {
-
-		if err == sql.ErrNoRows {
-			response.Error(
-				w,
-				http.StatusNotFound,
-				"production data not found",
-			)
-			return
-		}
 
 		response.Error(
 			w,
 			http.StatusInternalServerError,
 			err.Error(),
 		)
+
 		return
 	}
+
+	if len(items) == 0 {
+
+		response.Error(
+			w,
+			http.StatusNotFound,
+			"production data not found",
+		)
+
+		return
+	}
+
+	//----------------------------------------------------------
+	// Success
+	//----------------------------------------------------------
 
 	response.JSON(
 		w,
 		http.StatusOK,
-		resp,
+		items,
 	)
-
 }
