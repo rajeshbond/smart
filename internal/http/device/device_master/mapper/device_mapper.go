@@ -1,3 +1,10 @@
+/******************************************************************************
+ *
+ * MODULE      : Device Master
+ * FILE        : mapper.go
+ *
+ ******************************************************************************/
+
 package mapper
 
 import (
@@ -6,8 +13,14 @@ import (
 	"github.com/rajeshbond/smart/internal/http/device/device_master/model"
 )
 
-// CreateRequest → Model
-func ToModelForCreate(req dto.CreateDeviceRequest, userID int64) *model.Device {
+//------------------------------------------------------------------------------
+// CreateRequest -> Model
+//------------------------------------------------------------------------------
+
+func ToModelForCreate(
+	req dto.CreateDeviceRequest,
+	userID int64,
+) *model.Device {
 
 	return &model.Device{
 
@@ -47,9 +60,15 @@ func ToModelForCreate(req dto.CreateDeviceRequest, userID int64) *model.Device {
 	}
 }
 
-// UpdateRequest → Model
+//------------------------------------------------------------------------------
+// UpdateRequest -> Model
+//------------------------------------------------------------------------------
 
-func ToModelForUpdate(id int64, req dto.UpdateDeviceRequest, userID int64) *model.Device {
+func ToModelForUpdate(
+	id int64,
+	req dto.UpdateDeviceRequest,
+	userID int64,
+) *model.Device {
 
 	return &model.Device{
 
@@ -91,27 +110,51 @@ func ToModelForUpdate(id int64, req dto.UpdateDeviceRequest, userID int64) *mode
 	}
 }
 
-// Model → CreateResponse
-func ToCreateResponse(device *model.Device) dto.CreateDeviceResponse {
+//------------------------------------------------------------------------------
+// Model -> CreateResponse
+//------------------------------------------------------------------------------
+
+func ToCreateResponse(
+	device *model.Device,
+) dto.CreateDeviceResponse {
+
 	return dto.CreateDeviceResponse{
-		ID:                device.ID,
-		DeviceID:          device.DeviceID,
-		SerialNumber:      device.SerialNumber,
-		Model:             device.Model,
-		HardwareVersion:   utils.StringValue(device.HardwareVersion),
-		FirmwareVersion:   utils.StringValue(device.FirmwareVersion),
+
+		ID: device.ID,
+
+		DeviceID: device.DeviceID,
+
+		SerialNumber: device.SerialNumber,
+
+		Model: device.Model,
+
+		HardwareVersion: utils.StringValue(device.HardwareVersion),
+
+		FirmwareVersion: utils.StringValue(device.FirmwareVersion),
+
 		CommunicationType: device.CommunicationType,
-		DeviceStatus:      device.DeviceStatus,
-		ChipID:            utils.StringValue(device.ChipID),
-		IsActive:          device.IsActive,
-		ManufacturedAt:    utils.TimePtr(device.ManufacturedAt),
-		CreatedAt:         utils.TimePtr(&device.CreatedAt),
-		Message:           "Device created successfully",
+
+		DeviceStatus: device.DeviceStatus,
+
+		ChipID: utils.StringValue(device.ChipID),
+
+		IsActive: device.IsActive,
+
+		ManufacturedAt: utils.TimePtr(device.ManufacturedAt),
+
+		CreatedAt: utils.TimePtr(&device.CreatedAt),
+
+		Message: "Device created successfully",
 	}
 }
 
+//------------------------------------------------------------------------------
 // Model -> UpdateResponse
-func ToUpdateResponse(device *model.Device) dto.UpdateDeviceResponse {
+//------------------------------------------------------------------------------
+
+func ToUpdateResponse(
+	device *model.Device,
+) dto.UpdateDeviceResponse {
 
 	return dto.UpdateDeviceResponse{
 
@@ -139,7 +182,9 @@ func ToUpdateResponse(device *model.Device) dto.UpdateDeviceResponse {
 	}
 }
 
-// Model → GetResponse
+//------------------------------------------------------------------------------
+// Model -> GetResponse
+//------------------------------------------------------------------------------
 
 func ToGetResponse(
 	device *model.Device,
@@ -179,38 +224,57 @@ func ToGetResponse(
 	}
 }
 
+//------------------------------------------------------------------------------
+// Model -> List Item
+//------------------------------------------------------------------------------
+
 func ToListItem(
 	device *model.Device,
 ) dto.DeviceListItem {
 
 	return dto.DeviceListItem{
-		ID:                device.ID,
-		DeviceID:          device.DeviceID,
-		SerialNumber:      device.SerialNumber,
-		Model:             device.Model,
-		HardwareVersion:   utils.StringValue(device.HardwareVersion),
-		FirmwareVersion:   utils.StringValue(device.FirmwareVersion),
+
+		ID: device.ID,
+
+		DeviceID: device.DeviceID,
+
+		SerialNumber: device.SerialNumber,
+
+		Model: device.Model,
+
+		HardwareVersion: utils.StringValue(device.HardwareVersion),
+
+		FirmwareVersion: utils.StringValue(device.FirmwareVersion),
+
 		CommunicationType: device.CommunicationType,
-		DeviceStatus:      device.DeviceStatus,
-		IsActive:          device.IsActive,
-		ChipID:            utils.StringValue(device.ChipID),
-		LastSeenAt:        device.LastSeenAt,
-		CreatedAt:         utils.TimePtr(&device.CreatedAt),
+
+		DeviceStatus: device.DeviceStatus,
+
+		IsActive: device.IsActive,
+
+		ChipID: utils.StringValue(device.ChipID),
+
+		LastSeenAt: device.LastSeenAt,
+
+		CreatedAt: utils.TimePtr(&device.CreatedAt),
 	}
 }
 
-// To List
+//------------------------------------------------------------------------------
+// Model List -> DTO List
+//------------------------------------------------------------------------------
 
 func ToListItems(
-	devices []model.Device,
+	devices []*model.Device,
 ) []dto.DeviceListItem {
 
 	items := make([]dto.DeviceListItem, 0, len(devices))
 
-	for i := range devices {
+	for _, device := range devices {
+
 		items = append(
 			items,
-			ToListItem(&devices[i]),
+			ToListItem(device),
 		)
 	}
 

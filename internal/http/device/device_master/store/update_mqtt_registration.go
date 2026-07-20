@@ -3,36 +3,33 @@
  * MODULE      : Device Master
  * FILE        : update_mqtt_registration_tx.go
  *
- * DESCRIPTION :
- * Update MQTT Registration
- *
  ******************************************************************************/
 
 package store
 
 import (
 	"context"
-
-	"github.com/jmoiron/sqlx"
+	"database/sql"
 
 	"github.com/rajeshbond/smart/internal/http/device/device_master/dto"
 )
 
 func (s *Store) UpdateMQTTRegistrationTx(
 	ctx context.Context,
-	tx *sqlx.Tx,
+	tx *sql.Tx,
 	req *dto.UpdateMQTTRegistration,
 ) error {
 
-	_, err := tx.NamedExecContext(
+	_, err := tx.ExecContext(
 		ctx,
 		UpdateMQTTRegistration,
-		req,
+
+		req.MQTTRegistrationStatus,
+		req.MQTTRegisteredAt,
+		req.MQTTRegisteredBy,
+		req.UpdatedBy,
+		req.DeviceID,
 	)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }

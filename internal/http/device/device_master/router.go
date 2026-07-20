@@ -1,13 +1,3 @@
-/******************************************************************************
- *
- * MODULE      : Device Master
- * FILE        : router.go
- *
- * DESCRIPTION :
- * Device Master Routes
- *
- ******************************************************************************/
-
 package devicemaster
 
 import (
@@ -18,58 +8,29 @@ import (
 	"github.com/rajeshbond/smart/internal/auth"
 )
 
-func (m *Module) RegisterRoutes(r chi.Router) {
+func (m *Module) Routes() chi.Router {
+	r := chi.NewRouter()
 
-	r.Route("/", func(r chi.Router) {
+	// Authentication
+	r.Use(auth.Authenticator(m.tokenAuth))
 
-		//----------------------------------------------------------------------
-		// Authentication
-		//----------------------------------------------------------------------
+	// Device CRUD
+	r.Post("/", m.Handler.Create)
+	r.Get("/", m.Handler.List)
+	r.Put("/{deviceID}", m.Handler.Update)
+	r.Delete("/{deviceID}", m.Handler.Delete)
 
-		r.Use(auth.Authenticator(m.tokenAuth))
+	// MQTT Registration
+	r.Post(
+		"/{deviceID}/mqtt/register",
+		m.Handler.RegisterMQTTUsername,
+	)
 
-		//----------------------------------------------------------------------
-		// Device CRUD
-		//----------------------------------------------------------------------
+	// MQTT Unregister (Future)
+	r.Delete(
+		"/{deviceID}/mqtt/register",
+		http.NotFound,
+	)
 
-		r.Post("/", m.Handler.Create)
-
-		r.Get("/", m.Handler.List)
-
-		// r.Get("/{deviceID}", m.Handler.Get)
-
-		r.Put("/{deviceID}", m.Handler.Update)
-
-		r.Delete("/{deviceID}", m.Handler.Delete)
-
-		//----------------------------------------------------------------------
-		// Device Status
-		//----------------------------------------------------------------------
-
-		// r.Patch("/{deviceID}/status", m.Handler.UpdateStatus)
-
-		//----------------------------------------------------------------------
-		// Firmware
-		//----------------------------------------------------------------------
-
-		// r.Patch("/{deviceID}/firmware", m.Handler.UpdateFirmware)
-
-		//----------------------------------------------------------------------
-		// MQTT Registration
-		//----------------------------------------------------------------------
-
-		r.Post(
-			"/{deviceID}/mqtt/register",
-			m.Handler.RegisterMQTTUsername,
-		)
-
-		//----------------------------------------------------------------------
-		// MQTT Unregister (Future)
-		//----------------------------------------------------------------------
-
-		r.Delete(
-			"/{deviceID}/mqtt/register",
-			http.NotFound,
-		)
-	})
+	return r
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/rajeshbond/smart/cmd/service"
 	"github.com/rajeshbond/smart/internal/http/command"
+	devicemaster "github.com/rajeshbond/smart/internal/http/device/device_master"
 	"github.com/rajeshbond/smart/internal/http/tenant"
 	userrole "github.com/rajeshbond/smart/internal/http/user_role"
 	"github.com/rajeshbond/smart/internal/http/users"
@@ -86,8 +87,8 @@ func NewRouter(app *App) http.Handler {
 	// Device Master
 	//==============================================================
 
-	// deviceMasterModule = devicemaster.NewModule(app.DB.SQLDB, app.Config, tokenAuth)
-	// r.Mount("/device-master", deviceMasterModule.RegisterRoutes())
+	deviceMasterModule := devicemaster.NewModule(app.DB.SQLDB, app.Config, tokenAuth)
+	r.Mount("/device-master", deviceMasterModule.Routes())
 
 	// MQTT Commands ----->(MQTT)
 

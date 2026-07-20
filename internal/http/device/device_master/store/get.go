@@ -3,9 +3,6 @@
  * MODULE      : Device Master
  * FILE        : get.go
  *
- * DESCRIPTION :
- * Get Device
- *
  ******************************************************************************/
 
 package store
@@ -16,24 +13,76 @@ import (
 	"github.com/rajeshbond/smart/internal/http/device/device_master/model"
 )
 
+//------------------------------------------------------------------------------
+// Get Device By ID
+//------------------------------------------------------------------------------
+
 func (s *Store) GetByID(
 	ctx context.Context,
 	id int64,
 ) (*model.Device, error) {
 
-	var device model.Device
-
-	err := s.db.GetContext(
+	row := s.db.QueryRowContext(
 		ctx,
-		&device,
 		GetDeviceByID,
 		id,
 	)
-	if err != nil {
-		return nil, err
-	}
 
-	return &device, nil
+	return scanDevice(row)
+}
+
+//------------------------------------------------------------------------------
+// Get Device By MQTT Username
+//------------------------------------------------------------------------------
+
+func (s *Store) GetByMQTTUsername(
+	ctx context.Context,
+	username string,
+) (*model.Device, error) {
+
+	row := s.db.QueryRowContext(
+		ctx,
+		GetDeviceByMQTTUsername,
+		username,
+	)
+
+	return scanDevice(row)
+}
+
+//------------------------------------------------------------------------------
+// Get Device By Device Secret
+//------------------------------------------------------------------------------
+
+func (s *Store) GetBySecret(
+	ctx context.Context,
+	secret string,
+) (*model.Device, error) {
+
+	row := s.db.QueryRowContext(
+		ctx,
+		GetDeviceBySecret,
+		secret,
+	)
+
+	return scanDevice(row)
+}
+
+//------------------------------------------------------------------------------
+// Get Device By Chip ID
+//------------------------------------------------------------------------------
+
+func (s *Store) GetByChipID(
+	ctx context.Context,
+	chipID string,
+) (*model.Device, error) {
+
+	row := s.db.QueryRowContext(
+		ctx,
+		GetDeviceByChipID,
+		chipID,
+	)
+
+	return scanDevice(row)
 }
 
 func (s *Store) GetByDeviceID(
@@ -41,145 +90,11 @@ func (s *Store) GetByDeviceID(
 	deviceID string,
 ) (*model.Device, error) {
 
-	var device model.Device
-
-	err := s.db.GetContext(
+	row := s.db.QueryRowContext(
 		ctx,
-		&device,
 		GetDeviceByDeviceID,
 		deviceID,
 	)
-	if err != nil {
-		return nil, err
-	}
 
-	return &device, nil
-}
-
-func (s *Store) GetBySerialNumber(
-	ctx context.Context,
-	serialNumber string,
-) (*model.Device, error) {
-
-	var device model.Device
-
-	err := s.db.GetContext(
-		ctx,
-		&device,
-		GetDeviceBySerialNumber,
-		serialNumber,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &device, nil
-}
-
-func (s *Store) GetByMQTTUsername(
-	ctx context.Context,
-	mqttUsername string,
-) (*model.Device, error) {
-
-	var device model.Device
-
-	err := s.db.GetContext(
-		ctx,
-		&device,
-		GetDeviceByMQTTUsername,
-		mqttUsername,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &device, nil
-}
-
-func (s *Store) GetByChipID(
-	ctx context.Context,
-	chipID string,
-) (*model.Device, error) {
-
-	var device model.Device
-
-	err := s.db.GetContext(
-		ctx,
-		&device,
-		GetDeviceByChipID,
-		chipID,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &device, nil
-}
-
-func (s *Store) ExistsByDeviceID(
-	ctx context.Context,
-	deviceID string,
-) (bool, error) {
-
-	var exists bool
-
-	err := s.db.GetContext(
-		ctx,
-		&exists,
-		ExistsByDeviceID,
-		deviceID,
-	)
-
-	return exists, err
-}
-
-func (s *Store) ExistsBySerialNumber(
-	ctx context.Context,
-	serialNumber string,
-) (bool, error) {
-
-	var exists bool
-
-	err := s.db.GetContext(
-		ctx,
-		&exists,
-		ExistsBySerialNumber,
-		serialNumber,
-	)
-
-	return exists, err
-}
-
-func (s *Store) ExistsByMQTTUsername(
-	ctx context.Context,
-	mqttUsername string,
-) (bool, error) {
-
-	var exists bool
-
-	err := s.db.GetContext(
-		ctx,
-		&exists,
-		ExistsByMQTTUsername,
-		mqttUsername,
-	)
-
-	return exists, err
-}
-
-func (s *Store) ExistsByChipID(
-	ctx context.Context,
-	chipID string,
-) (bool, error) {
-
-	var exists bool
-
-	err := s.db.GetContext(
-		ctx,
-		&exists,
-		ExistsByChipID,
-		chipID,
-	)
-
-	return exists, err
+	return scanDevice(row)
 }

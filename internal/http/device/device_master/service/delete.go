@@ -3,47 +3,61 @@
  * MODULE      : Device Master
  * FILE        : delete.go
  *
- * DESCRIPTION :
- * Delete Device Service
- *
  ******************************************************************************/
 
 package service
 
 import (
 	"context"
-	"fmt"
 )
 
 //------------------------------------------------------------------------------
-// Delete Device
+// Delete
 //------------------------------------------------------------------------------
 
 func (s *Service) Delete(
 	ctx context.Context,
 	id int64,
-	updatedBy int64,
+	userID int64,
 ) error {
 
 	//----------------------------------------------------------------------
-	// Validation
+	// Begin Transaction
 	//----------------------------------------------------------------------
 
-	if id <= 0 {
-		return fmt.Errorf("invalid device id")
+	tx, err := s.Store.BeginTx(ctx)
+	if err != nil {
+		return err
 	}
 
-	if updatedBy <= 0 {
-		return fmt.Errorf("invalid updated by")
-	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
 
 	//----------------------------------------------------------------------
 	// Delete Device
 	//----------------------------------------------------------------------
 
-	return s.store.Delete(
+	err = s.Store.DeleteTx(
 		ctx,
+		tx,
 		id,
-		updatedBy,
+		userID,
 	)
+	if err != nil {
+		return err
+	}
+
+	//----------------------------------------------------------------------
+	// Commit Transaction
+	//----------------------------------------------------------------------
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

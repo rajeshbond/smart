@@ -41,13 +41,11 @@ func (h *Handler) Update(
 
 	claims, err := auth.MustUserClaims(ctx)
 	if err != nil {
-
 		response.Error(
 			w,
 			http.StatusUnauthorized,
 			auth.UnAuthorised,
 		)
-
 		return
 	}
 
@@ -56,18 +54,16 @@ func (h *Handler) Update(
 	//----------------------------------------------------------------------
 
 	if !permission.CanUpdateDevice(claims.Role) {
-
 		response.Error(
 			w,
 			http.StatusForbidden,
 			auth.PermissionDenied.Error(),
 		)
-
 		return
 	}
 
 	//----------------------------------------------------------------------
-	// Parse ID
+	// Parse Device ID
 	//----------------------------------------------------------------------
 
 	id, err := strconv.ParseInt(
@@ -75,15 +71,25 @@ func (h *Handler) Update(
 		10,
 		64,
 	)
-
 	if err != nil {
-
 		response.Error(
 			w,
 			http.StatusBadRequest,
 			"invalid device id",
 		)
+		return
+	}
 
+	//----------------------------------------------------------------------
+	// Validate Request Body
+	//----------------------------------------------------------------------
+
+	if r.Body == nil {
+		response.Error(
+			w,
+			http.StatusBadRequest,
+			"request body is required",
+		)
 		return
 	}
 
@@ -97,43 +103,40 @@ func (h *Handler) Update(
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&req); err != nil {
-
 		response.Error(
 			w,
 			http.StatusBadRequest,
 			err.Error(),
 		)
-
 		return
 	}
-
-	//----------------------------------------------------------------------
-	// DTO -> Model
-	//----------------------------------------------------------------------
-
-	device := mapper.ToModelForUpdate(id, req, claims.UserID)
 
 	//----------------------------------------------------------------------
 	// Service
 	//----------------------------------------------------------------------
 
-	if err := h.service.Update(
+	device, err := h.service.Update(
 		ctx,
-		device,
-	); err != nil {
-
+		id,
+		req,
+		claims.UserID,
+	)
+	if err != nil {
 		response.Error(
 			w,
 			http.StatusBadRequest,
 			err.Error(),
 		)
-
 		return
 	}
 
 	//----------------------------------------------------------------------
-	// Response
+	// Success
 	//----------------------------------------------------------------------
 
-	response.JSON(w, http.StatusOK, mapper.ToUpdateResponse(device))
+	response.JSON(
+		w,
+		http.StatusOK,
+		mapper.ToUpdateResponse(device),
+	)
 }

@@ -3,9 +3,6 @@
  * MODULE      : Device Master
  * FILE        : get.go
  *
- * DESCRIPTION :
- * Get Device Service
- *
  ******************************************************************************/
 
 package service
@@ -17,7 +14,7 @@ import (
 )
 
 //------------------------------------------------------------------------------
-// Get By ID
+// Get Device By ID
 //------------------------------------------------------------------------------
 
 func (s *Service) GetByID(
@@ -25,59 +22,35 @@ func (s *Service) GetByID(
 	id int64,
 ) (*model.Device, error) {
 
-	return s.store.GetByID(
-		ctx,
-		id,
-	)
+	return s.Store.GetByID(ctx, id)
 }
 
 //------------------------------------------------------------------------------
-// Get By Device ID
-//------------------------------------------------------------------------------
-
-func (s *Service) GetByDeviceID(
-	ctx context.Context,
-	deviceID string,
-) (*model.Device, error) {
-
-	return s.store.GetByDeviceID(
-		ctx,
-		deviceID,
-	)
-}
-
-//------------------------------------------------------------------------------
-// Get By Serial Number
-//------------------------------------------------------------------------------
-
-func (s *Service) GetBySerialNumber(
-	ctx context.Context,
-	serialNumber string,
-) (*model.Device, error) {
-
-	return s.store.GetBySerialNumber(
-		ctx,
-		serialNumber,
-	)
-}
-
-//------------------------------------------------------------------------------
-// Get By MQTT Username
+// Get Device By MQTT Username
 //------------------------------------------------------------------------------
 
 func (s *Service) GetByMQTTUsername(
 	ctx context.Context,
-	mqttUsername string,
+	username string,
 ) (*model.Device, error) {
 
-	return s.store.GetByMQTTUsername(
-		ctx,
-		mqttUsername,
-	)
+	return s.Store.GetByMQTTUsername(ctx, username)
 }
 
 //------------------------------------------------------------------------------
-// Get By Chip ID
+// Get Device By Secret
+//------------------------------------------------------------------------------
+
+func (s *Service) GetBySecret(
+	ctx context.Context,
+	secret string,
+) (*model.Device, error) {
+
+	return s.Store.GetBySecret(ctx, secret)
+}
+
+//------------------------------------------------------------------------------
+// Get Device By Chip ID
 //------------------------------------------------------------------------------
 
 func (s *Service) GetByChipID(
@@ -85,8 +58,5 @@ func (s *Service) GetByChipID(
 	chipID string,
 ) (*model.Device, error) {
 
-	return s.store.GetByChipID(
-		ctx,
-		chipID,
-	)
+	return s.Store.GetByChipID(ctx, chipID)
 }

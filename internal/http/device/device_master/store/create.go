@@ -3,52 +3,62 @@
  * MODULE      : Device Master
  * FILE        : create.go
  *
- * DESCRIPTION :
- * Create Device
- *
  ******************************************************************************/
 
 package store
 
 import (
 	"context"
-
+	"database/sql"
 
 	"github.com/rajeshbond/smart/internal/http/device/device_master/model"
 )
 
-func (s *Store) Create(
+func (s *Store) CreateTx(
 	ctx context.Context,
+	tx *sql.Tx,
 	device *model.Device,
 ) (int64, error) {
 
-	rows, err := s.db.NamedQueryContext(
-		ctx,
-		CreateDevice,
-		device,
-	)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
 	var id int64
 
-	if rows.Next() {
-		if err := rows.Scan(&id); err != nil {
-			return 0, err
-		}
+	err := tx.QueryRowContext(
+		ctx,
+		CreateDevice,
+
+		device.DeviceID,
+		device.SerialNumber,
+
+		device.Model,
+		device.HardwareVersion,
+		device.FirmwareVersion,
+		device.ManufacturedAt,
+
+		device.MQTTUsername,
+		device.MQTTPassword,
+
+		device.SoftAPSSID,
+		device.SoftAPPassword,
+
+		device.DeviceSecret,
+
+		device.ChipID,
+
+		device.MACAddressWiFi,
+		device.MACAddressEthernet,
+
+		device.CommunicationType,
+		device.DeviceStatus,
+
+		device.Notes,
+
+		device.CreatedBy,
+		device.UpdatedBy,
+	).Scan(&id)
+
+	if err != nil {
+		return 0, err
 	}
 
 	return id, nil
 }
-
-// func (s *Store) BeginTx(
-// 	ctx context.Context,
-// ) (*sqlx.Tx, error) {
-
-// 	return s.db.BeginTxx(
-// 		ctx,
-// 		nil,
-// 	)
-// }

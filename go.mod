@@ -11,7 +11,6 @@ require (
 	github.com/go-chi/jwtauth/v5 v5.4.0
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.12.3
 	github.com/swaggo/http-swagger v1.3.4

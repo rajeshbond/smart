@@ -73,7 +73,7 @@ func (h *Handler) Create(
 	}
 
 	//----------------------------------------------------------------------
-	// Decode Request DTO
+	// Decode Request
 	//----------------------------------------------------------------------
 
 	var req dto.CreateDeviceRequest
@@ -91,32 +91,30 @@ func (h *Handler) Create(
 	}
 
 	//----------------------------------------------------------------------
-	// Map DTO -> Model
+	// Create Device
 	//----------------------------------------------------------------------
 
-	device := mapper.ToModelForCreate(req, claims.UserID)
-
-	id, err := h.service.Create(
+	device, err := h.service.Create(
 		ctx,
-		device,
+		req,
+		claims.UserID,
 	)
-
 	if err != nil {
-
 		response.Error(
 			w,
 			http.StatusBadRequest,
 			err.Error(),
 		)
-
 		return
 	}
-
-	device.ID = id
 
 	//----------------------------------------------------------------------
 	// Success
 	//----------------------------------------------------------------------
 
-	response.JSON(w, http.StatusCreated, mapper.ToCreateResponse(device))
+	response.JSON(
+		w,
+		http.StatusCreated,
+		mapper.ToCreateResponse(device),
+	)
 }

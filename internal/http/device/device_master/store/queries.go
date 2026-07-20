@@ -1,18 +1,8 @@
-/******************************************************************************
- *
- * MODULE      : Device Master
- * FILE        : queries.go
- *
- * DESCRIPTION :
- * PostgreSQL Queries
- *
- ******************************************************************************/
-
 package store
 
-// -----------------------------------------------------------------------------
-// INSERT
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// CREATE DEVICE
+//------------------------------------------------------------------------------
 
 const CreateDevice = `
 INSERT INTO device_master
@@ -48,95 +38,74 @@ INSERT INTO device_master
 )
 VALUES
 (
-    :device_id,
-    :serial_number,
+    $1,
+    $2,
 
-    :model,
-    :hardware_version,
-    :firmware_version,
-    :manufactured_at,
+    $3,
+    $4,
+    $5,
+    $6,
 
-    :mqtt_username,
-    :mqtt_password,
+    $7,
+    $8,
 
-    :softap_ssid,
-    :softap_password,
+    $9,
+    $10,
 
-    :device_secret,
+    $11,
 
-    :chip_id,
+    $12,
 
-    :mac_address_wifi,
-    :mac_address_ethernet,
+    $13,
+    $14,
 
-    :communication_type,
-    :device_status,
+    $15,
+    $16,
 
-    :notes,
+    $17,
 
-    :created_by,
-    :updated_by
+    $18,
+    $19
 )
 RETURNING id;
 `
 
-// -----------------------------------------------------------------------------
-// UPDATE
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// UPDATE DEVICE
+//------------------------------------------------------------------------------
 
 const UpdateDevice = `
 UPDATE device_master
 SET
+    model                 = $2,
+    hardware_version      = $3,
+    firmware_version      = $4,
+    manufactured_at       = $5,
 
-    model               = :model,
-    hardware_version    = :hardware_version,
-    firmware_version    = :firmware_version,
-    manufactured_at     = :manufactured_at,
+    mqtt_username         = $6,
+    mqtt_password         = $7,
 
-    mqtt_username       = :mqtt_username,
-    mqtt_password       = :mqtt_password,
+    softap_ssid           = $8,
+    softap_password       = $9,
 
-    softap_ssid         = :softap_ssid,
-    softap_password     = :softap_password,
+    device_secret         = $10,
 
-    device_secret       = :device_secret,
+    chip_id               = $11,
 
-    chip_id             = :chip_id,
+    mac_address_wifi      = $12,
+    mac_address_ethernet  = $13,
 
-    mac_address_wifi    = :mac_address_wifi,
-    mac_address_ethernet= :mac_address_ethernet,
+    communication_type    = $14,
 
-    communication_type  = :communication_type,
+    device_status         = $15,
 
-    device_status       = :device_status,
+    notes                 = $16,
 
-    notes               = :notes,
+    is_active             = $17,
 
-    is_active           = :is_active,
+    updated_by            = $18,
 
-    updated_by          = :updated_by,
-
-    updated_at          = CURRENT_TIMESTAMP
-
-WHERE
-    id = :id
-AND
-    is_deleted = FALSE;
-`
-
-// -----------------------------------------------------------------------------
-// SOFT DELETE
-// -----------------------------------------------------------------------------
-
-const DeleteDevice = `
-UPDATE device_master
-SET
-
-    is_deleted = TRUE,
-
-    updated_by = $2,
-
-    updated_at = CURRENT_TIMESTAMP
+    updated_at            = CURRENT_TIMESTAMP
 
 WHERE
     id = $1
@@ -144,41 +113,55 @@ AND
     is_deleted = FALSE;
 `
 
-// -----------------------------------------------------------------------------
-// EXISTS
-// -----------------------------------------------------------------------------
+const deviceColumns = `
+	id,
+	device_id,
+	serial_number,
 
-const ExistsByMQTTUsername = `
-SELECT EXISTS
-(
-    SELECT 1
-    FROM device_master
-    WHERE mqtt_username = $1
-    AND is_deleted = FALSE
-);
+	model,
+	hardware_version,
+	firmware_version,
+	manufactured_at,
+
+	mqtt_username,
+	mqtt_password,
+
+	softap_ssid,
+	softap_password,
+
+	device_secret,
+
+	chip_id,
+
+	mac_address_wifi,
+	mac_address_ethernet,
+
+	communication_type,
+	device_status,
+
+	last_seen_at,
+
+	mqtt_registration_status,
+	mqtt_registered_at,
+	mqtt_registered_by,
+
+	is_active,
+	is_deleted,
+
+	notes,
+
+	created_at,
+	created_by,
+
+	updated_at,
+	updated_by
 `
-
-const ExistsByChipID = `
-SELECT EXISTS
-(
-    SELECT 1
-    FROM device_master
-    WHERE chip_id = $1
-    AND is_deleted = FALSE
-);
-`
-
-//==============================================================================
-// GET
-//==============================================================================
-
-//------------------------------------------------------------------------------
-// Get By ID
-//------------------------------------------------------------------------------
 
 const GetDeviceByID = `
-SELECT *
-FROM device_master
+SELECT
+` + deviceColumns + `
+FROM
+	device_master
 WHERE
 	id = $1
 AND
@@ -186,12 +169,14 @@ AND
 `
 
 //------------------------------------------------------------------------------
-// Get By Device ID
+// Get Device By Device ID
 //------------------------------------------------------------------------------
 
 const GetDeviceByDeviceID = `
-SELECT *
-FROM device_master
+SELECT
+` + deviceColumns + `
+FROM
+	device_master
 WHERE
 	device_id = $1
 AND
@@ -199,25 +184,14 @@ AND
 `
 
 //------------------------------------------------------------------------------
-// Get By Serial Number
-//------------------------------------------------------------------------------
-
-const GetDeviceBySerialNumber = `
-SELECT *
-FROM device_master
-WHERE
-	serial_number = $1
-AND
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Get By MQTT Username
+// Get Device By MQTT Username
 //------------------------------------------------------------------------------
 
 const GetDeviceByMQTTUsername = `
-SELECT *
-FROM device_master
+SELECT
+` + deviceColumns + `
+FROM
+	device_master
 WHERE
 	mqtt_username = $1
 AND
@@ -225,25 +199,14 @@ AND
 `
 
 //------------------------------------------------------------------------------
-// Get By Chip ID
-//------------------------------------------------------------------------------
-
-const GetDeviceByChipID = `
-SELECT *
-FROM device_master
-WHERE
-	chip_id = $1
-AND
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Get By Device Secret
+// Get Device By Device Secret
 //------------------------------------------------------------------------------
 
 const GetDeviceBySecret = `
-SELECT *
-FROM device_master
+SELECT
+` + deviceColumns + `
+FROM
+	device_master
 WHERE
 	device_secret = $1
 AND
@@ -251,12 +214,44 @@ AND
 `
 
 //------------------------------------------------------------------------------
-// Get By WiFi MAC Address
+// Get Device By Chip ID
+//------------------------------------------------------------------------------
+
+const GetDeviceByChipID = `
+SELECT
+` + deviceColumns + `
+FROM
+	device_master
+WHERE
+	chip_id = $1
+AND
+	is_deleted = FALSE;
+`
+
+//------------------------------------------------------------------------------
+// Get Device By Serial Number
+//------------------------------------------------------------------------------
+
+const GetDeviceBySerialNumber = `
+SELECT
+` + deviceColumns + `
+FROM
+	device_master
+WHERE
+	serial_number = $1
+AND
+	is_deleted = FALSE;
+`
+
+//------------------------------------------------------------------------------
+// Get Device By WiFi MAC Address
 //------------------------------------------------------------------------------
 
 const GetDeviceByWiFiMAC = `
-SELECT *
-FROM device_master
+SELECT
+` + deviceColumns + `
+FROM
+	device_master
 WHERE
 	mac_address_wifi = $1
 AND
@@ -264,76 +259,18 @@ AND
 `
 
 //------------------------------------------------------------------------------
-// Get By Ethernet MAC Address
+// Get Device By Ethernet MAC Address
 //------------------------------------------------------------------------------
 
 const GetDeviceByEthernetMAC = `
-SELECT *
-FROM device_master
+SELECT
+` + deviceColumns + `
+FROM
+	device_master
 WHERE
 	mac_address_ethernet = $1
 AND
 	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Get Active Devices
-//------------------------------------------------------------------------------
-
-const GetActiveDevices = `
-SELECT *
-FROM device_master
-WHERE
-	is_active = TRUE
-AND
-	is_deleted = FALSE
-ORDER BY
-	device_id;
-`
-
-//------------------------------------------------------------------------------
-// Get Inactive Devices
-//------------------------------------------------------------------------------
-
-const GetInactiveDevices = `
-SELECT *
-FROM device_master
-WHERE
-	is_active = FALSE
-AND
-	is_deleted = FALSE
-ORDER BY
-	device_id;
-`
-
-//------------------------------------------------------------------------------
-// Get Online Devices
-//------------------------------------------------------------------------------
-
-const GetOnlineDevices = `
-SELECT *
-FROM device_master
-WHERE
-	device_status = 'ONLINE'
-AND
-	is_deleted = FALSE
-ORDER BY
-	last_seen_at DESC;
-`
-
-//------------------------------------------------------------------------------
-// Get Offline Devices
-//------------------------------------------------------------------------------
-
-const GetOfflineDevices = `
-SELECT *
-FROM device_master
-WHERE
-	device_status = 'OFFLINE'
-AND
-	is_deleted = FALSE
-ORDER BY
-	last_seen_at DESC;
 `
 
 //==============================================================================
@@ -389,6 +326,38 @@ SELECT EXISTS
 `
 
 //------------------------------------------------------------------------------
+// Exists By MQTT Username
+//------------------------------------------------------------------------------
+
+const ExistsByMQTTUsername = `
+SELECT EXISTS
+(
+	SELECT 1
+	FROM device_master
+	WHERE
+		mqtt_username = $1
+	AND
+		is_deleted = FALSE
+);
+`
+
+//------------------------------------------------------------------------------
+// Exists By Chip ID
+//------------------------------------------------------------------------------
+
+const ExistsByChipID = `
+SELECT EXISTS
+(
+	SELECT 1
+	FROM device_master
+	WHERE
+		chip_id = $1
+	AND
+		is_deleted = FALSE
+);
+`
+
+//------------------------------------------------------------------------------
 // Exists By Device Secret
 //------------------------------------------------------------------------------
 
@@ -405,7 +374,7 @@ SELECT EXISTS
 `
 
 //------------------------------------------------------------------------------
-// Exists By WiFi MAC
+// Exists By WiFi MAC Address
 //------------------------------------------------------------------------------
 
 const ExistsByWiFiMAC = `
@@ -421,7 +390,7 @@ SELECT EXISTS
 `
 
 //------------------------------------------------------------------------------
-// Exists By Ethernet MAC
+// Exists By Ethernet MAC Address
 //------------------------------------------------------------------------------
 
 const ExistsByEthernetMAC = `
@@ -436,503 +405,42 @@ SELECT EXISTS
 );
 `
 
-//==============================================================================
-// LIST
-//==============================================================================
+//------------------------------------------------------------------------------
+// Soft Delete Device
+//------------------------------------------------------------------------------
 
+const DeleteDevice = `
+UPDATE device_master
+SET
+	is_deleted = TRUE,
+	updated_by = $2,
+	updated_at = CURRENT_TIMESTAMP
+WHERE
+	id = $1
+AND
+	is_deleted = FALSE;
+`
 const ListDevices = `
 SELECT
-	*
+` + deviceColumns + `
 FROM
 	device_master
-`
-
-//==============================================================================
-// COUNT
-//==============================================================================
-
-const CountDevices = `
-SELECT
-	COUNT(*)
-FROM
-	device_master
-`
-
-//==============================================================================
-// DEVICE PROVISIONING
-//==============================================================================
-
-//------------------------------------------------------------------------------
-// Factory Provision Device
-//------------------------------------------------------------------------------
-
-const ProvisionDevice = `
-UPDATE device_master
-SET
-
-	chip_id = $2,
-
-	mac_address_wifi = $3,
-
-	mac_address_ethernet = $4,
-
-	updated_by = $5,
-
-	updated_at = CURRENT_TIMESTAMP
-
 WHERE
-
-	id = $1
-
-AND
-
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Update WiFi MAC Address
-//------------------------------------------------------------------------------
-
-const UpdateWiFiMAC = `
-UPDATE device_master
-SET
-
-	mac_address_wifi = $2,
-
-	updated_by = $3,
-
-	updated_at = CURRENT_TIMESTAMP
-
-WHERE
-
-	id = $1
-
-AND
-
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Update Ethernet MAC Address
-//------------------------------------------------------------------------------
-
-const UpdateEthernetMAC = `
-UPDATE device_master
-SET
-
-	mac_address_ethernet = $2,
-
-	updated_by = $3,
-
-	updated_at = CURRENT_TIMESTAMP
-
-WHERE
-
-	id = $1
-
-AND
-
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Update Chip ID
-//------------------------------------------------------------------------------
-
-const UpdateChipID = `
-UPDATE device_master
-SET
-
-	chip_id = $2,
-
-	updated_by = $3,
-
-	updated_at = CURRENT_TIMESTAMP
-
-WHERE
-
-	id = $1
-
-AND
-
-	is_deleted = FALSE;
-`
-
-//==============================================================================
-// MQTT AUTHENTICATION
-//==============================================================================
-
-//------------------------------------------------------------------------------
-// Authenticate Device
-//------------------------------------------------------------------------------
-
-const AuthenticateDevice = `
-SELECT *
-FROM device_master
-WHERE
-
-	device_id = $1
-
-AND
-
-	mqtt_username = $2
-
-AND
-
-	mqtt_password = $3
-
-AND
-
-	is_active = TRUE
-
-AND
-
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Get Device By MQTT Username
-//------------------------------------------------------------------------------
-
-const GetDeviceForMQTT = `
-SELECT *
-FROM device_master
-WHERE
-
-	mqtt_username = $1
-
-AND
-
-	is_active = TRUE
-
-AND
-
-	is_deleted = FALSE;
-`
-
-//==============================================================================
-// COMMUNICATION
-//==============================================================================
-
-//------------------------------------------------------------------------------
-// Update Communication Type
-//------------------------------------------------------------------------------
-
-const UpdateCommunicationType = `
-UPDATE device_master
-SET
-
-	communication_type = $2,
-
-	updated_by = $3,
-
-	updated_at = CURRENT_TIMESTAMP
-
-WHERE
-
-	id = $1
-
-AND
-
-	is_deleted = FALSE;
-`
-
-//==============================================================================
-// DEVICE ACTIVATION
-//==============================================================================
-
-//------------------------------------------------------------------------------
-// Activate Device
-//------------------------------------------------------------------------------
-
-const ActivateDevice = `
-UPDATE device_master
-SET
-
-	is_active = TRUE,
-
-	updated_by = $2,
-
-	updated_at = CURRENT_TIMESTAMP
-
-WHERE
-
-	id = $1
-
-AND
-
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Deactivate Device
-//------------------------------------------------------------------------------
-
-const DeactivateDevice = `
-UPDATE device_master
-SET
-
-	is_active = FALSE,
-
-	updated_by = $2,
-
-	updated_at = CURRENT_TIMESTAMP
-
-WHERE
-
-	id = $1
-
-AND
-
-	is_deleted = FALSE;
-`
-
-//==============================================================================
-// DEVICE SECRET
-//==============================================================================
-
-//------------------------------------------------------------------------------
-// Update Device Secret
-//------------------------------------------------------------------------------
-
-const UpdateDeviceSecret = `
-UPDATE device_master
-SET
-
-	device_secret = $2,
-
-	updated_by = $3,
-
-	updated_at = CURRENT_TIMESTAMP
-
-WHERE
-
-	id = $1
-
-AND
-
-	is_deleted = FALSE;
-`
-
-//==============================================================================
-// DASHBOARD
-//==============================================================================
-
-//------------------------------------------------------------------------------
-// Total Devices
-//------------------------------------------------------------------------------
-
-const CountTotalDevices = `
-SELECT COUNT(*)
-FROM device_master
-WHERE
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Active Devices
-//------------------------------------------------------------------------------
-
-const CountActiveDevices = `
-SELECT COUNT(*)
-FROM device_master
-WHERE
-	is_active = TRUE
-AND
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Inactive Devices
-//------------------------------------------------------------------------------
-
-const CountInactiveDevices = `
-SELECT COUNT(*)
-FROM device_master
-WHERE
-	is_active = FALSE
-AND
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Online Devices
-//------------------------------------------------------------------------------
-
-const CountOnlineDevices = `
-SELECT COUNT(*)
-FROM device_master
-WHERE
-	device_status = 'ONLINE'
-AND
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Offline Devices
-//------------------------------------------------------------------------------
-
-const CountOfflineDevices = `
-SELECT COUNT(*)
-FROM device_master
-WHERE
-	device_status = 'OFFLINE'
-AND
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// In Stock
-//------------------------------------------------------------------------------
-
-const CountInStockDevices = `
-SELECT COUNT(*)
-FROM device_master
-WHERE
-	device_status = 'IN_STOCK'
-AND
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Installed
-//------------------------------------------------------------------------------
-
-const CountInstalledDevices = `
-SELECT COUNT(*)
-FROM device_master
-WHERE
-	device_status = 'INSTALLED'
-AND
-	is_deleted = FALSE;
-`
-
-//------------------------------------------------------------------------------
-// Faulty
-//------------------------------------------------------------------------------
-
-const CountFaultyDevices = `
-SELECT COUNT(*)
-FROM device_master
-WHERE
-	device_status = 'FAULTY'
-AND
-	is_deleted = FALSE;
-`
-
-//==============================================================================
-// HEARTBEAT
-//==============================================================================
-
-//------------------------------------------------------------------------------
-// Devices Not Seen Since
-//------------------------------------------------------------------------------
-
-const GetDevicesNotSeenSince = `
-SELECT *
-FROM device_master
-WHERE
-	last_seen_at < $1
-AND
 	is_deleted = FALSE
 ORDER BY
-	last_seen_at ASC;
+	id DESC
+LIMIT $1
+OFFSET $2;
 `
-
-//------------------------------------------------------------------------------
-// Recently Seen Devices
-//------------------------------------------------------------------------------
-
-const GetRecentlySeenDevices = `
-SELECT *
-FROM device_master
-WHERE
-	last_seen_at IS NOT NULL
-AND
-	is_deleted = FALSE
-ORDER BY
-	last_seen_at DESC;
-`
-
-//==============================================================================
-// FACTORY
-//==============================================================================
-
-//------------------------------------------------------------------------------
-// Devices Waiting For Provisioning
-//------------------------------------------------------------------------------
-
-const GetUnProvisionedDevices = `
-SELECT *
-FROM device_master
-WHERE
-	chip_id IS NULL
-AND
-	is_deleted = FALSE
-ORDER BY
-	created_at ASC;
-`
-
-//------------------------------------------------------------------------------
-// Provisioned Devices
-//------------------------------------------------------------------------------
-
-const GetProvisionedDevices = `
-SELECT *
-FROM device_master
-WHERE
-	chip_id IS NOT NULL
-AND
-	is_deleted = FALSE
-ORDER BY
-	created_at DESC;
-`
-const UpdateLastSeen = `
-UPDATE device_master
-SET
-	last_seen_at = CURRENT_TIMESTAMP,
-	updated_at = CURRENT_TIMESTAMP
-WHERE
-	device_id = $1
-AND
-	is_deleted = FALSE;
-`
-const UpdateDeviceStatus = `
-UPDATE device_master
-SET
-	device_status = $2,
-	updated_by = $3,
-	updated_at = CURRENT_TIMESTAMP
-WHERE
-	id = $1
-	AND is_deleted = FALSE;
-`
-
-const UpdateFirmwareVersion = `
-UPDATE device_master
-SET
-	firmware_version = $2,
-	updated_by = $3,
-	updated_at = CURRENT_TIMESTAMP
-WHERE
-	id = $1
-	AND is_deleted = FALSE;
-`
-
-// -----------------------------------------------------------------------------
-// UPDATE MQTT REGISTRATION
-// -----------------------------------------------------------------------------
-
 const UpdateMQTTRegistration = `
 UPDATE device_master
 SET
-    mqtt_registration_status = :mqtt_registration_status,
-    mqtt_registered_at       = :mqtt_registered_at,
-    mqtt_registered_by       = :mqtt_registered_by,
-    updated_by               = :updated_by,
-    updated_at               = CURRENT_TIMESTAMP
+    mqtt_registration_status = $1,
+    mqtt_registered_at       = $2,
+    mqtt_registered_by       = $3,
+    updated_by               = $4,
+    updated_at               = NOW()
 WHERE
-    device_id = :device_id
-AND
-    is_deleted = FALSE;
+    device_id = $5
+    AND is_deleted = FALSE;
 `

@@ -17,7 +17,7 @@ import (
 //------------------------------------------------------------------------------
 
 type Service struct {
-	store *store.Store
+	Store *store.Store
 
 	mqtt mqttadmin.Service
 }
@@ -33,7 +33,7 @@ func NewService(
 
 	return &Service{
 
-		store: store,
+		Store: store,
 
 		mqtt: mqtt,
 	}

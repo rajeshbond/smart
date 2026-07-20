@@ -1,8 +1,9 @@
 package devicemaster
 
 import (
+	"database/sql"
+
 	"github.com/go-chi/jwtauth/v5"
-	"github.com/jmoiron/sqlx"
 	"github.com/rajeshbond/smart/config"
 	"github.com/rajeshbond/smart/internal/http/device/device_master/handler"
 	"github.com/rajeshbond/smart/internal/http/device/device_master/service"
@@ -18,7 +19,7 @@ type Module struct {
 	tokenAuth *jwtauth.JWTAuth
 }
 
-func NewModule(db *sqlx.DB, cfg *config.Config, tokenAuth *jwtauth.JWTAuth) *Module {
+func NewModule(db *sql.DB, cfg *config.Config, tokenAuth *jwtauth.JWTAuth) *Module {
 	//----------------------------------------------------------
 	// Store
 	//----------------------------------------------------------

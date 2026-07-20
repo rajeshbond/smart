@@ -1,3 +1,10 @@
+/******************************************************************************
+ *
+ * MODULE      : Device Master
+ * FILE        : register_mqtt.go
+ *
+ ******************************************************************************/
+
 package service
 
 import (
@@ -9,70 +16,70 @@ import (
 	"github.com/rajeshbond/smart/internal/http/device/device_master/model"
 )
 
+//------------------------------------------------------------------------------
+// Register MQTT Username
+//------------------------------------------------------------------------------
+
 func (s *Service) RegisterMqttUsername(
 	ctx context.Context,
 	req dto.RegisterMQTTRequest,
 	userID int64,
 ) (*dto.RegisterMQTTResponse, error) {
 
-	//----------------------------------------------------------
+	//----------------------------------------------------------------------
 	// Get Device
-	//----------------------------------------------------------
+	//----------------------------------------------------------------------
 
-	device, err := s.store.GetByDeviceID(
+	device, err := s.Store.GetByDeviceID(
 		ctx,
 		req.DeviceID,
 	)
-
 	if err != nil {
 		return nil, err
 	}
 
-	//----------------------------------------------------------
+	//----------------------------------------------------------------------
 	// Already Registered?
-	//----------------------------------------------------------
+	//----------------------------------------------------------------------
 
 	if device.MQTTRegistrationStatus == model.MQTTStatusRegistered {
 		return nil, response.ErrMQTTAlreadyRegistered
 	}
 
-	//----------------------------------------------------------
-	// Register User On Mosquitto
-	//----------------------------------------------------------
+	//----------------------------------------------------------------------
+	// Register User On MQTT Broker
+	//----------------------------------------------------------------------
 
-	err = s.mqtt.RegisterUser(
+	if err = s.mqtt.RegisterUser(
 		ctx,
 		device.MQTTUsername,
 		device.MQTTPassword,
-	)
-
-	if err != nil {
+	); err != nil {
 		return nil, err
 	}
 
-	//----------------------------------------------------------
+	//----------------------------------------------------------------------
 	// Begin Transaction
-	//----------------------------------------------------------
+	//----------------------------------------------------------------------
 
-	tx, err := s.store.BeginTx(ctx)
-
+	tx, err := s.Store.BeginTx(ctx)
 	if err != nil {
-
-		_ = s.mqtt.DeleteUser(
-			ctx,
-			device.MQTTUsername,
-		)
-
+		_ = s.mqtt.DeleteUser(ctx, device.MQTTUsername)
 		return nil, err
 	}
+
+	rollback := true
 
 	defer func() {
-		_ = tx.Rollback()
+		if rollback {
+			_ = tx.Rollback()
+			_ = s.mqtt.DeleteUser(ctx, device.MQTTUsername)
+		}
 	}()
 
-	//----------------------------------------------------------
+	//----------------------------------------------------------------------
 	// Update Database
-	//----------------------------------------------------------
+	//----------------------------------------------------------------------
 
 	now := time.Now()
 
@@ -89,43 +96,29 @@ func (s *Service) RegisterMqttUsername(
 		UpdatedBy: &userID,
 	}
 
-	err = s.store.UpdateMQTTRegistrationTx(
+	if err = s.Store.UpdateMQTTRegistrationTx(
 		ctx,
 		tx,
 		updateReq,
-	)
-
-	if err != nil {
-
-		_ = s.mqtt.DeleteUser(
-			ctx,
-			device.MQTTUsername,
-		)
-
+	); err != nil {
 		return nil, err
 	}
 
-	//----------------------------------------------------------
-	// Commit
-	//----------------------------------------------------------
+	//----------------------------------------------------------------------
+	// Commit Transaction
+	//----------------------------------------------------------------------
 
-	err = tx.Commit()
-
-	if err != nil {
-
-		_ = s.mqtt.DeleteUser(
-			ctx,
-			device.MQTTUsername,
-		)
-
+	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 
-	//----------------------------------------------------------
+	rollback = false
+
+	//----------------------------------------------------------------------
 	// Response
-	//----------------------------------------------------------
+	//----------------------------------------------------------------------
 
-	resp := &dto.RegisterMQTTResponse{
+	return &dto.RegisterMQTTResponse{
 
 		DeviceID: device.DeviceID,
 
@@ -136,7 +129,5 @@ func (s *Service) RegisterMqttUsername(
 		MQTTRegisteredAt: &now,
 
 		Message: "MQTT user registered successfully",
-	}
-
-	return resp, nil
+	}, nil
 }
