@@ -121,6 +121,7 @@ func (h *Handler) Test1(w http.ResponseWriter, r *http.Request) {
 		"employee_id": claims.EmployeeID,
 		"tenant_id":   claims.TenantID,
 		"role_id":     claims.RoleID,
+		"user_role":   claims.Role,
 		"username":    claims.Username,
 		"message":     "Private route working",
 	}

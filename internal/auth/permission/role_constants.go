@@ -11,9 +11,12 @@
 package permission
 
 const (
-	RoleSuperAdmin = "superadmin"
-	RoleXoomAdmin  = "xoomadmin"
-	RoleXoomUser   = "xoomuser"
+	RoleSuperAdmin  = "superadmin"
+	RoleXoomAdmin   = "xoomadmin"
+	RoleXoomUser    = "xoomuser"
+	RoleAdminTenant = "admintenant"
+	RoleTenantOwner = "tenantowner"
+	RoleTenantUser  = "tenantuser"
 
 	RoleDistributorAdmin   = "distributoradmin"
 	RoleDistributorService = "distributorservice"

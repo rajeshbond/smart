@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/rajeshbond/smart/cmd/service"
 	"github.com/rajeshbond/smart/internal/http/command"
+	devicedata "github.com/rajeshbond/smart/internal/http/device/device_data"
 	devicemaster "github.com/rajeshbond/smart/internal/http/device/device_master"
 	"github.com/rajeshbond/smart/internal/http/tenant"
 	userrole "github.com/rajeshbond/smart/internal/http/user_role"
@@ -79,6 +80,11 @@ func NewRouter(app *App) http.Handler {
 	//3. Users
 	usersModule := users.NewModule(app.DB.SQLDB, tokenAuth, userRoleModule.Service, tenantModule.Service)
 	r.Mount("/users", usersModule.Router())
+
+	// Production Log
+
+	productionLogModule := devicedata.NewModule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/proddata", productionLogModule.Router())
 
 	// Route Mounts Ends here <---------------
 

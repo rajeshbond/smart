@@ -94,3 +94,19 @@ func CanListDevice(role string) bool {
 
 	return false
 }
+
+func ProductionLogViewwer(role string) bool {
+	switch strings.ToLower(role) {
+
+	case
+		RoleSuperAdmin,
+		RoleXoomAdmin,
+		RoleXoomUser,
+		RoleAdminTenant,
+		RoleTenantOperator,
+		RoleTenantUser:
+		return true
+	}
+
+	return false
+}
