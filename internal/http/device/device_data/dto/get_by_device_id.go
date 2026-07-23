@@ -10,6 +10,7 @@ type GetProductionRequest struct {
 }
 
 type ProductionResponse struct {
+	EventID         string    `json:"event_id"`
 	TenantID        string    `json:"tenant_id"`
 	CustomerID      string    `json:"customer_id"`
 	DeviceID        string    `json:"device_id"`

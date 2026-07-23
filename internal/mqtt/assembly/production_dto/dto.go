@@ -20,6 +20,8 @@ type ProductionDTO struct {
 
 	Count uint64 `json:"count"`
 
+	EventID string `json:"event_id"`
+
 	CycleTimeSec float64 `json:"cycle_time_sec"`
 
 	Timestamp string `json:"timestamp"`

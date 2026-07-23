@@ -32,6 +32,7 @@ func (h *ProductionHandler) ProductionHandler() paho.MessageHandler {
 			if err := json.Unmarshal(data, &req); err != nil {
 
 				log.Printf("Production JSON Error : %v", err)
+				log.Printf("Raw Payload: %q", string(msg.Payload()))
 
 				return
 			}
@@ -51,7 +52,8 @@ func (h *ProductionHandler) ProductionHandler() paho.MessageHandler {
 			}
 			// fmt.Println(req)
 			log.Printf(
-				"Production Saved | Device=%s | Station=%s | Count=%d | Cycle Time=%.2f sec",
+				"Production Saved | EventID=%s | Device=%s | Station=%s | Count=%d | Cycle Time=%.2f sec",
+				req.EventID,
 				req.DeviceID,
 				req.Station,
 				req.Count,

@@ -22,6 +22,7 @@ func (s *Store) GetByTenantAndDeviceID(ctx context.Context, req dto.GetProductio
 
 		err := rows.Scan(
 			&item.TenantID,
+			&item.EventID,
 			&item.CustomerID,
 			&item.DeviceID,
 			&item.MachineID,

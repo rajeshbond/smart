@@ -3,6 +3,7 @@ package store
 const GetLatestProductionByDevice = `
 SELECT
     tenant_id,
+    event_id,
     customer_id,
     device_id,
     machine_id,
