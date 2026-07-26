@@ -1,28 +1,21 @@
-package devicedata
+package tenantshifts
 
 import (
-	"net/http"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/rajeshbond/smart/internal/auth"
 )
 
 func (m *Module) Router() chi.Router {
 	r := chi.NewRouter()
-	r.Get("/prodlog", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Production Log Test Ok"))
-	})
 
-	// Provate router
+	// Private routes
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Verifier(m.tokenAuth))
 		r.Use(auth.Authenticator(m.tokenAuth))
 		r.Use(auth.UserContextInjector)
-		r.Post("/assembly", m.Handler.GetProductionLogByTenantIDAndDeviceID)
-		r.Post("/assemblyshift", m.Handler.GetShiftProductionCount)
+
+		r.Post("/createtenantshigt", m.Handler.CreateTenanthifts)
 	})
-
 	return r
-
 }

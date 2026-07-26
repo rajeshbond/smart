@@ -38,7 +38,7 @@ func (h *Handler) GetProductionLogByTenantIDAndDeviceID(
 	// Authorization
 	//----------------------------------------------------------
 
-	if !permission.CanCreateDevice(claims.Role) {
+	if !permission.ProductionLogViewwer(claims.Role) {
 
 		response.Error(
 			w,
@@ -112,5 +112,99 @@ func (h *Handler) GetProductionLogByTenantIDAndDeviceID(
 		w,
 		http.StatusOK,
 		items,
+	)
+}
+
+func (h *Handler) GetShiftProductionCount(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	//----------------------------------------------------------
+	// Authentication
+	//----------------------------------------------------------
+
+	claims, err := auth.MustUserClaims(ctx)
+
+	if err != nil {
+
+		response.Error(
+			w,
+			http.StatusUnauthorized,
+			auth.UnAuthorised,
+		)
+
+		return
+	}
+
+	//----------------------------------------------------------
+	// Authorization
+	//----------------------------------------------------------
+
+	if !permission.ProductionLogViewwer(claims.Role) {
+
+		response.Error(
+			w,
+			http.StatusForbidden,
+			auth.PermissionDenied.Error(),
+		)
+
+		return
+	}
+
+	var req dto.GetProductionRequest
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&req); err != nil {
+
+		response.Error(
+			w,
+			http.StatusBadRequest,
+			err.Error(),
+		)
+
+		return
+	}
+
+	if req.Limit <= 0 {
+		req.Limit = 1
+	}
+
+	//----------------------------------------------------------
+	// Service
+	//----------------------------------------------------------
+
+	item, err := h.Service.GetProduction(ctx, req, claims.TenantID)
+
+	if err != nil {
+
+		response.Error(
+			w,
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+
+		return
+	}
+
+	if item == nil {
+
+		response.Error(
+			w,
+			http.StatusNotFound,
+			"production data not found",
+		)
+
+		return
+	}
+
+	//----------------------------------------------------------
+	// Success
+	//----------------------------------------------------------
+
+	response.JSON(
+		w,
+		http.StatusOK,
+		item,
 	)
 }

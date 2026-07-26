@@ -1,4 +1,4 @@
-package devicedata
+package shift
 
 import (
 	"net/http"
@@ -9,20 +9,17 @@ import (
 
 func (m *Module) Router() chi.Router {
 	r := chi.NewRouter()
-	r.Get("/prodlog", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Production Log Test Ok"))
+	r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Resource type Test Ok"))
 	})
-
-	// Provate router
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Verifier(m.tokenAuth))
 		r.Use(auth.Authenticator(m.tokenAuth))
 		r.Use(auth.UserContextInjector)
-		r.Post("/assembly", m.Handler.GetProductionLogByTenantIDAndDeviceID)
-		r.Post("/assemblyshift", m.Handler.GetShiftProductionCount)
+		r.Post("/createshift", m.Handler.Create)
+
 	})
 
 	return r
-
 }

@@ -20,6 +20,7 @@ package tenant
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"net/http"
 
@@ -53,7 +54,7 @@ func (h *Handler) CreateTenant(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	var req CreateTenantDTO
+	var req CreateTenantRequied
 
 	// Get JWT claims from context
 	claims, ok := auth.GetUserClaimsFromContext(ctx)
@@ -104,6 +105,8 @@ func (h *Handler) VerifyTenant(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var req IsVerfiedRequest
+
+	fmt.Println(req)
 
 	claims, ok := auth.GetUserClaimsFromContext(ctx)
 	if !ok {

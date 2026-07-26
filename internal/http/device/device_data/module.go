@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/rajeshbond/smart/internal/http/device/device_data/handler"
 	"github.com/rajeshbond/smart/internal/http/device/device_data/service"
+	"github.com/rajeshbond/smart/internal/http/device/device_data/shiftprovider"
 	"github.com/rajeshbond/smart/internal/http/device/device_data/store"
 )
 
@@ -16,9 +17,9 @@ type Module struct {
 	tokenAuth *jwtauth.JWTAuth
 }
 
-func NewModule(db *sql.DB, tokenAuth *jwtauth.JWTAuth) *Module {
+func NewModule(db *sql.DB, tokenAuth *jwtauth.JWTAuth, shiftprovider shiftprovider.ShiftProvider) *Module {
 	store := store.NewStore(db)
-	service := service.NewService(store)
+	service := service.NewService(store, shiftprovider)
 	handler := handler.NewService(service, tokenAuth)
 
 	return &Module{

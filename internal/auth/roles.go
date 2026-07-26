@@ -57,27 +57,27 @@ func Tcode(employee_id string) (string, error) {
 
 // Function Validate Tenant ID with Tenant code
 
-// func ValidateTenantAccesswithTenantCode(role string, claimsTenantID, reqTenantID int64) error {
+func ValidateTenantAccesswithTenantCode(role string, claimsTenantID, reqTenantID int64) error {
 
-// 	switch role {
+	switch role {
 
-// 	case RoleSuperAdmin, RoleAdmin:
-// 		// Full Access
-// 		return nil
+	case permission.RoleSuperAdmin, permission.RoleXoomAdmin:
+		// Full Access
+		return nil
 
-// 	case RoleTenantAdmin, RoleTenantOwner:
-// 		// Restricted to own tenant
-// 		if claimsTenantID != reqTenantID {
-// 			fmt.Println("Rajesh failed ")
-// 			return ErrTenantMismatch
-// 		}
+	case permission.RoleTenantAdmin, permission.RoleTenantOwner:
+		// Restricted to own tenant
+		if claimsTenantID != reqTenantID {
+			fmt.Println("Rajesh failed ")
+			return ErrTenantMismatch
+		}
 
-// 		return nil // ✅ IMPORTANT FIX
+		return nil // ✅ IMPORTANT FIX
 
-// 	default:
-// 		return ErrUnauthorized
-// 	}
-// }
+	default:
+		return ErrUnauthorized
+	}
+}
 
 func TenantRoleCheck(role string) error {
 	switch role {

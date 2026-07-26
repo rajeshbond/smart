@@ -44,7 +44,7 @@ func NewStore(db *sql.DB) *Store {
 
 // 1. Create Tenant by suer Admin or Admin
 
-func (s *Store) Create(ctx context.Context, dto CreateTenantDTO, userID int64) (*Tenant, error) {
+func (s *Store) Create(ctx context.Context, dto CreateTenantRequied, userID int64) (*Tenant, error) {
 	query := `
 		INSERT INTO tenant (tenant_name, tenant_code, address,created_by,updated_by) 
 		VALUES ($1,$2,$3,$4,$4)

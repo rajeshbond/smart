@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"database/sql"
+	"time"
 
 	"github.com/rajeshbond/smart/internal/http/device/device_data/dto"
 )
@@ -46,6 +48,61 @@ func (s *Store) GetByTenantAndDeviceID(ctx context.Context, req dto.GetProductio
 
 	return result, nil
 
+}
+
+func (s *Store) GetTenantCountByDevice(ctx context.Context, req dto.GetProductionRequest) (*dto.ProductionResponse, error) {
+	var item dto.ProductionResponse
+
+	err := s.db.QueryRowContext(ctx, GetLatestProductionByDevice, req.TenantID, req.DeviceID, req.Station, 1).Scan(
+		&item.TenantID,
+		&item.EventID,
+		&item.CustomerID,
+		&item.DeviceID,
+		&item.MachineID,
+		&item.Station,
+		&item.ProductionCount,
+		&item.CycleTimeSec,
+		&item.ProductionTime,
+		&item.CreatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &item, nil
+}
+
+func (s *Store) GetFirstShiftProductionCount(
+	ctx context.Context,
+	tenantID string,
+	deviceID string,
+	station string,
+	shiftStart time.Time,
+	shiftEnd time.Time,
+) (int64, error) {
+
+	var count int64
+
+	err := s.db.QueryRowContext(
+		ctx,
+		GetFirstShiftProductionCount,
+		tenantID,
+		deviceID,
+		station,
+		shiftStart,
+		shiftEnd,
+	).Scan(&count)
+
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 // func (s *Store) GetByTenantAndDeviceID(ctx context.Context, tenantID, deviceID string) (*dto.ProductionResponse, error) {

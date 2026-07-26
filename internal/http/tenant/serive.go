@@ -42,7 +42,7 @@ func NewService(store *Store) *Service {
 
 // 1. Create Tenant
 
-func (s *Service) CreateTenant(ctx context.Context, dto CreateTenantDTO, claim *auth.UserClaims) (*TenantResponse, error) {
+func (s *Service) CreateTenant(ctx context.Context, dto CreateTenantRequied, claim *auth.UserClaims) (*TenantResponse, error) {
 
 	// example Validate
 

@@ -20,7 +20,10 @@ import (
 	"github.com/rajeshbond/smart/internal/http/command"
 	devicedata "github.com/rajeshbond/smart/internal/http/device/device_data"
 	devicemaster "github.com/rajeshbond/smart/internal/http/device/device_master"
+	"github.com/rajeshbond/smart/internal/http/shift"
+
 	"github.com/rajeshbond/smart/internal/http/tenant"
+	tenantshifts "github.com/rajeshbond/smart/internal/http/tenant_shifts"
 	userrole "github.com/rajeshbond/smart/internal/http/user_role"
 	"github.com/rajeshbond/smart/internal/http/users"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -81,9 +84,18 @@ func NewRouter(app *App) http.Handler {
 	usersModule := users.NewModule(app.DB.SQLDB, tokenAuth, userRoleModule.Service, tenantModule.Service)
 	r.Mount("/users", usersModule.Router())
 
+	// Tenant shift
+	tenantShiftMoulde := tenantshifts.NewModule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/tenantshift", tenantShiftMoulde.Router())
+
+	// Shift
+
+	shiftModule := shift.NewModule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/shift", shiftModule.Router())
+
 	// Production Log
 
-	productionLogModule := devicedata.NewModule(app.DB.SQLDB, tokenAuth)
+	productionLogModule := devicedata.NewModule(app.DB.SQLDB, tokenAuth, shiftModule.Store)
 	r.Mount("/proddata", productionLogModule.Router())
 
 	// Route Mounts Ends here <---------------
