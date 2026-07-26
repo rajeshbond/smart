@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"log"
 	"time"
 
 	"github.com/rajeshbond/smart/internal/http/device/device_data/dto"
@@ -73,14 +74,8 @@ func (s *Store) GetTenantCountByDevice(ctx context.Context, req dto.GetProductio
 	return &item, nil
 }
 
-func (s *Store) GetFirstShiftProductionCount(
-	ctx context.Context,
-	tenantID string,
-	deviceID string,
-	station string,
-	shiftStart time.Time,
-	shiftEnd time.Time,
-) (int64, error) {
+func (s *Store) GetFirstShiftProductionCount(ctx context.Context, tenantID string, deviceID string, station string,
+	shiftStart time.Time, shiftEnd time.Time) (int64, error) {
 
 	var count int64
 
@@ -101,6 +96,40 @@ func (s *Store) GetFirstShiftProductionCount(
 	if err != nil {
 		return 0, err
 	}
+
+	return count, nil
+}
+
+func (s *Store) GetFirstDayProductionCount(ctx context.Context, tenantID string, deviceID string, station string, dayStart time.Time, dayEnd time.Time) (int64, error) {
+
+	var count int64
+
+	err := s.db.QueryRowContext(
+		ctx,
+		GetFirstDayProductionCount,
+		tenantID,
+		deviceID,
+		station,
+		dayStart,
+		dayEnd,
+	).Scan(&count)
+
+	if err != nil {
+
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+
+		return 0, err
+	}
+
+	log.Println("================================")
+	log.Println("Tenant            :", tenantID)
+	log.Println("Device            :", deviceID)
+	log.Println("Station           :", station)
+	log.Println("Production Day    :", dayStart, "->", dayEnd)
+	log.Println("First Day Counter :", count)
+	log.Println("================================")
 
 	return count, nil
 }
