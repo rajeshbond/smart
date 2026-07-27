@@ -79,10 +79,10 @@ func (s *Store) GetFirstShiftProductionCount(ctx context.Context, tenantID strin
 
 	var count int64
 
-	log.Println("================================")
-	log.Println("shiftStrt time", shiftStart)
-	log.Println("shiftEnd time", shiftEnd)
-	log.Println("================================")
+	// log.Println("================================")
+	// log.Println("shiftStrt time", shiftStart)
+	// log.Println("shiftEnd time", shiftEnd)
+	// log.Println("================================")
 
 	err := s.db.QueryRowContext(
 		ctx,
@@ -101,7 +101,7 @@ func (s *Store) GetFirstShiftProductionCount(ctx context.Context, tenantID strin
 	if err != nil {
 		return 0, err
 	}
-	log.Println("Count----->", count)
+	// log.Println("Count----->", count)
 	return count, nil
 }
 

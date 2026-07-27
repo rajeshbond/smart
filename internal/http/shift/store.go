@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/lib/pq"
@@ -343,9 +342,9 @@ func (s *Store) GetShiftByProductionTime(
 			(productionTime.After(start) &&
 				productionTime.Before(end)) {
 
-			log.Println("Shift Found")
-			log.Println("Shift ID ----->", sh.ShiftID)
-			log.Println("Shift Name ----->", sh.ShiftName)
+			// log.Println("Shift Found")
+			// log.Println("Shift ID ----->", sh.ShiftID)
+			// log.Println("Shift Name ----->", sh.ShiftName)
 
 			return &shiftprovider.ShiftInfo{
 

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"log"
 
 	"github.com/rajeshbond/smart/internal/http/device/device_data/dto"
 )
@@ -39,7 +38,7 @@ func (s *Service) GetProduction(
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Shift Name ----->", shift.ShiftName)
+	// log.Println("Shift Name ----->", shift.ShiftName)
 	item.ShiftName = shift.ShiftName
 
 	//-------------------------------------------------
@@ -69,8 +68,8 @@ func (s *Service) GetProduction(
 	// Live OEE
 	//-------------------------------------------------
 
-	log.Printf("Shift Start : %v", shift.ShiftStart)
-	log.Printf("Shift Count : %d", item.ProductionCount)
+	// log.Printf("Shift Start : %v", shift.ShiftStart)
+	// log.Printf("Shift Count : %d", item.ProductionCount)
 
 	item.OEE = CalculateLiveOEE(
 		shift.ShiftStart,
