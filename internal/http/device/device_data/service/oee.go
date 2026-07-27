@@ -18,7 +18,7 @@ const IdealCycleTimeSec = 30.0
 //   - No reject tracking    → Quality = 100%
 //   - Ideal cycle time      → 30 sec/part
 func CalculateLiveOEE(
-	shiftStart time.Time,
+	startTime time.Time,
 	productionTime time.Time,
 	shiftProduction int64,
 ) dto.OEE {
@@ -27,7 +27,15 @@ func CalculateLiveOEE(
 	// Elapsed shift time
 	//-------------------------------------------------
 
-	elapsedSeconds := productionTime.Sub(shiftStart).Seconds()
+	loc, err := time.LoadLocation("Asia/Kolkata")
+	if err == nil {
+		startTime = startTime.In(loc)
+		productionTime = productionTime.In(loc)
+	}
+
+	elapsedSeconds := productionTime.Sub(startTime).Seconds()
+
+	// elapsedSeconds := productionTime.Sub(shiftStart).Seconds()
 
 	if elapsedSeconds <= 0 {
 		return dto.OEE{}

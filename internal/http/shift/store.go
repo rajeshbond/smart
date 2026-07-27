@@ -116,11 +116,7 @@ func (s *Store) UpsertTenantShift(ctx context.Context, tx *sql.Tx, tenantID int6
 	return id, err
 }
 
-func (s *Store) GetProductionDay(
-	ctx context.Context,
-	tenantID int64,
-	productionTime time.Time,
-) (*shiftprovider.ProductionDayInfo, error) {
+func (s *Store) GetProductionDay(ctx context.Context, tenantID int64, productionTime time.Time) (*shiftprovider.ProductionDayInfo, error) {
 
 	rows, err := s.db.QueryContext(
 		ctx,
@@ -229,6 +225,135 @@ func (s *Store) GetProductionDay(
 	}, nil
 }
 
+// func (s *Store) GetShiftByProductionTime(ctx context.Context, tenantID int64, productionTime time.Time) (*shiftprovider.ShiftInfo, error) {
+
+// 	rows, err := s.db.QueryContext(
+// 		ctx,
+// 		GetShiftByTenant,
+// 		tenantID,
+// 	)
+
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer rows.Close()
+
+// 	type shiftRow struct {
+// 		ShiftID   int64
+// 		ShiftName string
+// 		StartTime time.Time
+// 		EndTime   time.Time
+// 		Weekday   int
+// 	}
+
+// 	var shifts []shiftRow
+
+// 	for rows.Next() {
+
+// 		var item shiftRow
+
+// 		err = rows.Scan(
+// 			&item.ShiftID,
+// 			&item.ShiftName,
+// 			&item.StartTime,
+// 			&item.EndTime,
+// 			&item.Weekday,
+// 		)
+
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		shifts = append(shifts, item)
+// 	}
+
+// 	if err = rows.Err(); err != nil {
+// 		return nil, err
+// 	}
+
+// 	if len(shifts) == 0 {
+// 		return nil, sql.ErrNoRows
+// 	}
+
+// 	//---------------------------------------------------------
+// 	// Go Sunday=0
+// 	// PostgreSQL Monday=1...Sunday=7
+// 	//---------------------------------------------------------
+
+// 	weekday := int(productionTime.Weekday())
+
+// 	if weekday == 0 {
+// 		weekday = 7
+// 	}
+
+// 	for _, sh := range shifts {
+
+// 		if sh.Weekday != weekday {
+// 			continue
+// 		}
+
+// 		start := time.Date(
+// 			productionTime.Year(),
+// 			productionTime.Month(),
+// 			productionTime.Day(),
+// 			sh.StartTime.Hour(),
+// 			sh.StartTime.Minute(),
+// 			0,
+// 			0,
+// 			productionTime.Location(),
+// 		)
+
+// 		end := time.Date(
+// 			productionTime.Year(),
+// 			productionTime.Month(),
+// 			productionTime.Day(),
+// 			sh.EndTime.Hour(),
+// 			sh.EndTime.Minute(),
+// 			0,
+// 			0,
+// 			productionTime.Location(),
+// 		)
+
+// 		//-------------------------------------------------
+// 		// Overnight Shift
+// 		//-------------------------------------------------
+
+// 		if !end.After(start) {
+
+// 			if productionTime.Before(end) {
+
+// 				start = start.AddDate(0, 0, -1)
+
+// 			} else {
+
+// 				end = end.AddDate(0, 0, 1)
+// 			}
+// 		}
+
+// 		if productionTime.Equal(start) ||
+// 			(productionTime.After(start) &&
+// 				productionTime.Before(end)) {
+
+// 			// log.Println("Shift Found")
+// 			// log.Println("Shift ID ----->", sh.ShiftID)
+// 			// log.Println("Shift Name ----->", sh.ShiftName)
+
+// 			return &shiftprovider.ShiftInfo{
+
+// 				ShiftID: sh.ShiftID,
+
+// 				ShiftName: sh.ShiftName,
+
+// 				ShiftStart: start,
+
+// 				ShiftEnd: end,
+// 			}, nil
+// 		}
+// 	}
+
+// 	return nil, fmt.Errorf("shift not found")
+// }
+
 func (s *Store) GetShiftByProductionTime(
 	ctx context.Context,
 	tenantID int64,
@@ -240,7 +365,6 @@ func (s *Store) GetShiftByProductionTime(
 		GetShiftByTenant,
 		tenantID,
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -284,11 +408,22 @@ func (s *Store) GetShiftByProductionTime(
 	}
 
 	//---------------------------------------------------------
-	// Go Sunday=0
-	// PostgreSQL Monday=1...Sunday=7
+	// Convert UTC -> IST
 	//---------------------------------------------------------
 
-	weekday := int(productionTime.Weekday())
+	loc, err := time.LoadLocation("Asia/Kolkata")
+	if err != nil {
+		return nil, err
+	}
+
+	localProductionTime := productionTime.In(loc)
+
+	//---------------------------------------------------------
+	// Go Sunday=0
+	// PostgreSQL Monday=1 ... Sunday=7
+	//---------------------------------------------------------
+
+	weekday := int(localProductionTime.Weekday())
 
 	if weekday == 0 {
 		weekday = 7
@@ -301,25 +436,25 @@ func (s *Store) GetShiftByProductionTime(
 		}
 
 		start := time.Date(
-			productionTime.Year(),
-			productionTime.Month(),
-			productionTime.Day(),
+			localProductionTime.Year(),
+			localProductionTime.Month(),
+			localProductionTime.Day(),
 			sh.StartTime.Hour(),
 			sh.StartTime.Minute(),
 			0,
 			0,
-			productionTime.Location(),
+			loc,
 		)
 
 		end := time.Date(
-			productionTime.Year(),
-			productionTime.Month(),
-			productionTime.Day(),
+			localProductionTime.Year(),
+			localProductionTime.Month(),
+			localProductionTime.Day(),
 			sh.EndTime.Hour(),
 			sh.EndTime.Minute(),
 			0,
 			0,
-			productionTime.Location(),
+			loc,
 		)
 
 		//-------------------------------------------------
@@ -328,7 +463,7 @@ func (s *Store) GetShiftByProductionTime(
 
 		if !end.After(start) {
 
-			if productionTime.Before(end) {
+			if localProductionTime.Before(end) {
 
 				start = start.AddDate(0, 0, -1)
 
@@ -338,23 +473,15 @@ func (s *Store) GetShiftByProductionTime(
 			}
 		}
 
-		if productionTime.Equal(start) ||
-			(productionTime.After(start) &&
-				productionTime.Before(end)) {
-
-			// log.Println("Shift Found")
-			// log.Println("Shift ID ----->", sh.ShiftID)
-			// log.Println("Shift Name ----->", sh.ShiftName)
+		if localProductionTime.Equal(start) ||
+			(localProductionTime.After(start) &&
+				localProductionTime.Before(end)) {
 
 			return &shiftprovider.ShiftInfo{
-
-				ShiftID: sh.ShiftID,
-
-				ShiftName: sh.ShiftName,
-
+				ShiftID:    sh.ShiftID,
+				ShiftName:  sh.ShiftName,
 				ShiftStart: start,
-
-				ShiftEnd: end,
+				ShiftEnd:   end,
 			}, nil
 		}
 	}

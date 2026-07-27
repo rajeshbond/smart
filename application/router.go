@@ -20,6 +20,7 @@ import (
 	"github.com/rajeshbond/smart/internal/http/command"
 	devicedata "github.com/rajeshbond/smart/internal/http/device/device_data"
 	devicemaster "github.com/rajeshbond/smart/internal/http/device/device_master"
+	internalsetup "github.com/rajeshbond/smart/internal/http/internal_setup"
 	"github.com/rajeshbond/smart/internal/http/shift"
 
 	"github.com/rajeshbond/smart/internal/http/tenant"
@@ -69,6 +70,10 @@ func NewRouter(app *App) http.Handler {
 	// ================================================================
 	// Mouldes mounting (Starts)
 	// ================================================================
+
+	// Internal setup
+	internalModule := internalsetup.NewModule(app.DB.SQLDB)
+	r.Mount("/internal", internalModule.Router())
 
 	// 1.User Role---->
 
