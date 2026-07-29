@@ -15,7 +15,6 @@ func (m *Module) RegisterMQTTAssemblyRoute(client paho.Client,
 	// Production
 
 	subscribe(client, TopicProduction, m.Handler.ProductionHandler())
-	
 
 	// Heartbeat
 	// subscribe(client,TopicHeartbeat,m.Handler.ProductionHandler())

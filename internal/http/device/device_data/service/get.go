@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"log"
 
+	"github.com/rajeshbond/smart/internal/common/utils"
 	"github.com/rajeshbond/smart/internal/http/device/device_data/dto"
 )
 
@@ -34,6 +36,10 @@ func (s *Service) GetProduction(
 		tenantID,
 		item.ProductionTime,
 	)
+
+	istTime := utils.ToIST(item.ProductionTime)
+
+	item.ProductionTime = istTime
 
 	if err != nil {
 		return nil, err
@@ -103,19 +109,20 @@ func (s *Service) GetProduction(
 		item.DayProduction,
 	)
 
-	// log.Println("========== SHIFT ==========")
-	// log.Println("Shift Name      :", shift.ShiftName)
-	// log.Println("Shift Start     :", shift.ShiftStart)
-	// log.Println("Shift End       :", shift.ShiftEnd)
+	log.Println("========== SHIFT ==========")
+	log.Println("Shift Name      :", shift.ShiftName)
+	log.Println("Shift Start     :", shift.ShiftStart)
+	log.Println("Shift End       :", shift.ShiftEnd)
 
-	// log.Println("========== DAY ==========")
-	// log.Println("Day Start       :", dayFirst.DayStart)
-	// log.Println("Day End         :", dayFirst.DayEnd)
+	log.Println("========== DAY ==========")
+	log.Println("Day Start       :", dayFirst.DayStart)
+	log.Println("Day End         :", dayFirst.DayEnd)
 
-	// log.Println("Production Time :", item.ProductionTime)
+	log.Println("Production Time :", item.ProductionTime)
+	log.Println("Created Time :", item.CreatedAt)
 
-	// log.Println("Shift Count     :", item.ProductionCount)
-	// log.Println("Day Count       :", item.DayProduction)
+	log.Println("Shift Count     :", item.ProductionCount)
+	log.Println("Day Count       :", item.DayProduction)
 
 	// log.Printf("OEE : %+v", item.OEE)
 
