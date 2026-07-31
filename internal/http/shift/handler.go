@@ -25,11 +25,14 @@ func NewHandler(service *Service, tokenAuth *jwtauth.JWTAuth) *Handler {
 // ==========================================
 // BULK CREATE (Multi Shift API)
 // ==========================================
+// ==========================================
+// BULK CREATE (Multi Shift API)
+// ==========================================
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// 🔐 Auth
+	// 🔐 Authentication
 	claims, ok := auth.GetUserClaimsFromContext(ctx)
 	if !ok {
 		response.Error(w, http.StatusUnauthorized, response.NotAuthorized)
@@ -41,44 +44,66 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ✅ IMPORTANT: Accept ARRAY request
+	// Decode Request
 	var req BulkCreateShiftRequest
 
 	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields() // 🔥 strict validation
+	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&req); err != nil {
-		response.Error(w, http.StatusBadRequest, "Invalid JSON body: "+err.Error())
+		response.Error(w, http.StatusBadRequest,
+			"Invalid JSON body: "+err.Error())
 		return
 	}
 
-	// Optional: empty check
 	if len(req) == 0 {
-		response.Error(w, http.StatusBadRequest, "Request body cannot be empty")
+		response.Error(w,
+			http.StatusBadRequest,
+			"Request body cannot be empty")
 		return
 	}
 
-	userID := claims.UserID
+	// Save
+	if err := h.Service.CreateBulk(
+		ctx,
+		claims.UserID,
+		req,
+	); err != nil {
 
-	// 🚀 Call service
-	err := h.Service.CreateBulk(ctx, userID, req)
-	if err != nil {
+		switch {
 
-		// DB overlap error
-		if strings.Contains(err.Error(), "Shift overlap") {
-			response.Error(w, http.StatusBadRequest, "Shift overlap detected")
-			return
+		case strings.Contains(err.Error(), "overlap"):
+			response.Error(w,
+				http.StatusBadRequest,
+				err.Error())
+
+		case strings.Contains(err.Error(), "24 hours"):
+			response.Error(w,
+				http.StatusBadRequest,
+				err.Error())
+
+		case strings.Contains(err.Error(), "already exists"):
+			response.Error(w,
+				http.StatusBadRequest,
+				err.Error())
+
+		case strings.Contains(err.Error(), "invalid time"):
+			response.Error(w,
+				http.StatusBadRequest,
+				err.Error())
+
+		default:
+			response.Error(w,
+				http.StatusInternalServerError,
+				err.Error())
 		}
 
-		// Duplicate constraint
-		if strings.Contains(err.Error(), "uix_shift_timing") {
-			response.Error(w, http.StatusBadRequest, "Duplicate shift timing")
-			return
-		}
-
-		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	response.JSON(w, http.StatusCreated, "Shifts created successfully")
+	response.JSON(
+		w,
+		http.StatusCreated,
+		"Shift configuration saved successfully",
+	)
 }

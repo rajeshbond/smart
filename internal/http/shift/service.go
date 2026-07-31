@@ -3,6 +3,7 @@ package shift
 import (
 	"context"
 	"fmt"
+	"strings"
 )
 
 type Service struct {
@@ -48,101 +49,130 @@ func (s *Service) CreateBulk(
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
-	// in-memory cache
-	tenantMap := make(map[string]int64)
-	dayMap := make(map[string]map[int][][2]int)
+	tenantCache := make(map[string]int64)
 
 	for _, shift := range req {
 
-		// ❌ validate empty timings
-		if len(shift.Timings) == 0 {
-			tx.Rollback()
-			return fmt.Errorf("no timings for shift %s", shift.ShiftName)
-		}
+		//----------------------------------
+		// Get Tenant
+		//----------------------------------
 
-		// 🔹 get tenant_id (cached)
-		tenantID, ok := tenantMap[shift.TenantCode]
+		tenantID, ok := tenantCache[shift.TenantCode]
 		if !ok {
-			id, err := s.Store.GetTenantIDByCode(ctx, tx, shift.TenantCode)
+
+			id, err := s.Store.GetTenantIDByCode(
+				ctx,
+				tx,
+				shift.TenantCode,
+			)
+
 			if err != nil {
-				tx.Rollback()
-				return fmt.Errorf("tenant not found: %s", shift.TenantCode)
+				return err
 			}
-			tenantMap[shift.TenantCode] = id
+
 			tenantID = id
+			tenantCache[shift.TenantCode] = id
 		}
 
-		// init weekday map
-		if _, ok := dayMap[shift.TenantCode]; !ok {
-			dayMap[shift.TenantCode] = make(map[int][][2]int)
-		}
+		//----------------------------------
+		// Parse New Shift
+		//----------------------------------
 
-		// 🔹 upsert shift
-		shiftID, err := s.Store.UpsertTenantShift(
-			ctx, tx, tenantID, shift.ShiftName, userID,
+		newShift, err := BuildShiftInterval(
+			shift.ShiftName,
+			shift.ShiftStart,
+			shift.ShiftEnd,
 		)
+
 		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("failed to upsert shift %s: %w", shift.ShiftName, err)
+			return err
 		}
 
-		// 🔹 timings loop
-		for _, t := range shift.Timings {
+		//----------------------------------
+		// Existing Shifts
+		//----------------------------------
 
-			start, err := toMinutes(t.ShiftStart)
-			if err != nil {
-				tx.Rollback()
-				return fmt.Errorf("invalid start time %s", t.ShiftStart)
-			}
+		existing, err := s.Store.GetTenantShifts(
+			ctx,
+			tx,
+			tenantID,
+		)
 
-			end, err := toMinutes(t.ShiftEnd)
-			if err != nil {
-				tx.Rollback()
-				return fmt.Errorf("invalid end time %s", t.ShiftEnd)
-			}
+		if err != nil {
+			return err
+		}
 
-			// overnight handling
-			if end <= start {
-				end += 1440
-			}
+		//----------------------------------
+		// Duplicate Name
+		//----------------------------------
 
-			existing := dayMap[shift.TenantCode][t.Weekday]
+		for _, ex := range existing {
 
-			// ❌ overlap check
-			for _, ex := range existing {
-				if start < ex[1] && end > ex[0] {
-					tx.Rollback()
-					return fmt.Errorf(
-						"overlap detected for tenant %s weekday %d",
-						shift.TenantCode, t.Weekday,
-					)
-				}
-			}
+			if strings.EqualFold(
+				ex.ShiftName,
+				newShift.ShiftName,
+			) {
 
-			// add interval
-			dayMap[shift.TenantCode][t.Weekday] =
-				append(existing, [2]int{start, end})
-
-			// ❌ 24-hour validation
-			total := 0
-			for _, ex := range dayMap[shift.TenantCode][t.Weekday] {
-				total += ex[1] - ex[0]
-			}
-
-			if total > 1440 {
-				tx.Rollback()
 				return fmt.Errorf(
-					"total shift exceeds 24h for tenant %s weekday %d",
-					shift.TenantCode, t.Weekday,
+					"shift '%s' already exists",
+					newShift.ShiftName,
 				)
 			}
+		}
 
-			// insert timing
-			if err := s.Store.InsertShiftTiming(ctx, tx, shiftID, t, userID); err != nil {
-				tx.Rollback()
-				return fmt.Errorf("failed to insert shift timing: %w", err)
-			}
+		//----------------------------------
+		// Overlap Check
+		//----------------------------------
+
+		if err := ValidateOverlap(
+			existing,
+			newShift,
+		); err != nil {
+
+			return err
+		}
+
+		//----------------------------------
+		// Total Duration
+		//----------------------------------
+
+		if err := ValidateTotalDuration(
+			existing,
+			newShift,
+		); err != nil {
+
+			return err
+		}
+
+		//----------------------------------
+		// Save
+		//----------------------------------
+
+		shiftID, err := s.Store.UpsertTenantShift(
+			ctx,
+			tx,
+			tenantID,
+			shift.ShiftName,
+			userID,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		err = s.Store.InsertShiftTiming(
+			ctx,
+			tx,
+			shiftID,
+			shift.ShiftStart,
+			shift.ShiftEnd,
+			userID,
+		)
+
+		if err != nil {
+			return err
 		}
 	}
 

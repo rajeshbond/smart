@@ -2,32 +2,44 @@
 -- TENANT TABLE
 -- =========================
 
-CREATE TABLE IF NOT EXISTS tenant (
-    id SERIAL PRIMARY KEY,
-    tenant_name VARCHAR NOT NULL,
-    tenant_code VARCHAR NOT NULL,
-    address VARCHAR NOT NULL,
+CREATE TABLE IF NOT EXISTS tenant ( id SERIAL PRIMARY KEY,
+
+-- Basic Information
+tenant_name VARCHAR(150) NOT NULL,
+tenant_code VARCHAR(100) NOT NULL,
+address TEXT NOT NULL,
+
+-- Location
+country VARCHAR(100) NOT NULL DEFAULT 'India',
+timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Kolkata',
 
 -- Contact
 contact_person_name VARCHAR(150),
 contact_phone VARCHAR(20),
 contact_email VARCHAR(150),
+
+-- Status
 is_verified BOOLEAN NOT NULL DEFAULT FALSE,
 is_active BOOLEAN NOT NULL DEFAULT TRUE,
 
--- Soft delete
+-- Soft Delete
 is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
 deleted_at TIMESTAMPTZ,
 deleted_by INTEGER,
 
 -- Audit
-
-
 created_by INTEGER,
-    updated_by INTEGER,
+updated_by INTEGER,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- Validation
+
+CONSTRAINT chk_country_not_empty
+        CHECK (TRIM(country) <> ''),
+
+    CONSTRAINT chk_timezone_not_empty
+        CHECK (TRIM(timezone) <> '')
 );
 
 -- =========================
@@ -37,8 +49,8 @@ created_by INTEGER,
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-   NEW.updated_at = NOW();
-   RETURN NEW;
+    NEW.updated_at = NOW();
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -67,7 +79,9 @@ WHERE
     AND contact_email IS NOT NULL;
 
 -- =========================
--- PERFORMANCE INDEX
+-- PERFORMANCE INDEXES
 -- =========================
 
 CREATE INDEX IF NOT EXISTS idx_tenant_active ON tenant (is_deleted, is_active);
+
+CREATE INDEX IF NOT EXISTS idx_tenant_timezone ON tenant (timezone);

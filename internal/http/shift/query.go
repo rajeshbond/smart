@@ -10,6 +10,5 @@ FROM tenant_shift ts
 JOIN shift_timing st
     ON st.tenant_shift_id = ts.id
 WHERE ts.tenant_id = $1
-AND st.weekday = $2
 ORDER BY st.shift_start;
 `

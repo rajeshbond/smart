@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/rajeshbond/smart/internal/common/utils"
 	"github.com/rajeshbond/smart/internal/http/device/device_data/dto"
@@ -26,6 +28,11 @@ func (s *Service) GetProduction(
 	if err != nil {
 		return nil, err
 	}
+	istNewProductionTime := utils.ToISTNew(item.ProductionTime)
+	log.Println("IST Production -----> ", istNewProductionTime)
+	log.Println("Latest Creation ----->", item.CreatedAt)
+	log.Println("Production Time ----->", item.ProductionTime)
+	log.Println("================================")
 
 	//-------------------------------------------------
 	// Shift Info
@@ -34,21 +41,29 @@ func (s *Service) GetProduction(
 	shift, err := s.shiftProvider.GetShiftByProductionTime(
 		ctx,
 		tenantID,
-		item.ProductionTime,
+		// item.ProductionTime, // Use production time instead of created time
+		istNewProductionTime,
 	)
 
-	istTime := utils.ToIST(item.ProductionTime)
-
-	item.ProductionTime = istTime
-
 	if err != nil {
+		log.Println("Shift Lookup Error :", err)
 		return nil, err
 	}
-	// log.Println("Shift Name ----->", shift.ShiftName)
-	item.ShiftName = shift.ShiftName
+
+	if shift == nil {
+		return nil, fmt.Errorf("shift not found")
+	}
+
+	log.Println("========== SHIFT ==========")
+	log.Println("Shift Name :", shift.ShiftName)
+	log.Println("Shift Start:", shift.ShiftStart)
+	log.Println("Shift End  :", shift.ShiftEnd)
+
+	log.Println("Local Time :", time.Now())
+	log.Println("UTC Time   :", time.Now().UTC())
 
 	//-------------------------------------------------
-	// First Shift Count
+	// First Shift Counter
 	//-------------------------------------------------
 
 	firstShiftCount, err := s.Store.GetFirstShiftProductionCount(
@@ -64,19 +79,23 @@ func (s *Service) GetProduction(
 		return nil, err
 	}
 
-	// log.Println("----> shift 1st", firstShiftCount)
+	log.Println("First Shift Count :", firstShiftCount)
+
 	//-------------------------------------------------
 	// Shift Production
 	//-------------------------------------------------
+
 	currentProductionCount := item.ProductionCount
-	item.ProductionCount = item.ProductionCount - firstShiftCount
 
-	//-------------------------------------------------
-	// Live OEE
-	//-------------------------------------------------
+	item.ProductionCount = currentProductionCount - firstShiftCount
 
-	// log.Printf("Shift Start : %v", shift.ShiftStart)
-	// log.Printf("Shift Count : %d", item.ProductionCount)
+	if item.ProductionCount < 0 {
+		item.ProductionCount = 0
+	}
+	item.ShiftName = shift.ShiftName
+	//-------------------------------------------------
+	// Shift OEE
+	//-------------------------------------------------
 
 	item.OEE = CalculateLiveOEE(
 		shift.ShiftStart,
@@ -84,30 +103,48 @@ func (s *Service) GetProduction(
 		item.ProductionCount,
 	)
 
-	// Day Production
+	//-------------------------------------------------
+	// Production Day
+	//-------------------------------------------------
 
-	dayFirst, err := s.shiftProvider.GetProductionDay(ctx, tenantID, item.ProductionTime)
+	dayInfo, err := s.shiftProvider.GetProductionDay(
+		ctx,
+		tenantID,
+		item.ProductionTime,
+	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	dayFirstCount, err := s.Store.GetFirstShiftProductionCount(ctx, req.TenantID, req.DeviceID, req.Station, dayFirst.DayStart, dayFirst.DayEnd)
+	dayFirstCount, err := s.Store.GetFirstShiftProductionCount(
+		ctx,
+		req.TenantID,
+		req.DeviceID,
+		req.Station,
+		dayInfo.DayStart,
+		dayInfo.DayEnd,
+	)
+
 	if err != nil {
 		return nil, err
 	}
 
-	dayProductionCount := currentProductionCount - dayFirstCount
+	item.DayProduction = currentProductionCount - dayFirstCount
 
-	// log.Println("====> Day Production Count ", dayProductionCount)
-
-	item.DayProduction = dayProductionCount
+	if item.DayProduction < 0 {
+		item.DayProduction = 0
+	}
 
 	item.DayOEE = CalculateLiveOEE(
-		dayFirst.DayStart,
+		dayInfo.DayStart,
 		item.ProductionTime,
 		item.DayProduction,
 	)
+
+	//-------------------------------------------------
+	// Debug Logs
+	//-------------------------------------------------
 
 	log.Println("========== SHIFT ==========")
 	log.Println("Shift Name      :", shift.ShiftName)
@@ -115,19 +152,139 @@ func (s *Service) GetProduction(
 	log.Println("Shift End       :", shift.ShiftEnd)
 
 	log.Println("========== DAY ==========")
-	log.Println("Day Start       :", dayFirst.DayStart)
-	log.Println("Day End         :", dayFirst.DayEnd)
+	log.Println("Day Start       :", dayInfo.DayStart)
+	log.Println("Day End         :", dayInfo.DayEnd)
 
 	log.Println("Production Time :", item.ProductionTime)
-	log.Println("Created Time :", item.CreatedAt)
+	log.Println("Created Time    :", item.CreatedAt)
 
 	log.Println("Shift Count     :", item.ProductionCount)
 	log.Println("Day Count       :", item.DayProduction)
 
-	// log.Printf("OEE : %+v", item.OEE)
-
 	return item, nil
 }
+
+//
+// func (s *Service) GetProduction(
+// 	ctx context.Context,
+// 	req dto.GetProductionRequest,
+// 	tenantID int64,
+// ) (*dto.ProductionResponse, error) {
+
+// 	//-------------------------------------------------
+// 	// Latest Production
+// 	//-------------------------------------------------
+
+// 	item, err := s.Store.GetTenantCountByDevice(ctx, req)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	log.Println("Latest Creation at ----->", item.CreatedAt)
+// 	log.Println("Last Counter ----->", item.ProductionTime)
+// 	log.Println("==============================")
+// 	//-------------------------------------------------
+// 	// Shift Info
+// 	//-------------------------------------------------
+
+// 	shift, err := s.shiftProvider.GetShiftByProductionTime(
+// 		ctx,
+// 		tenantID,
+// 		item.CreatedAt,
+// 	)
+// 	log.Println("Shift data -----> ", shift)
+// 	// istTime := utils.ToIST(item.ProductionTime)
+
+// 	// item.ProductionTime = istTime
+
+// 	// if err != nil {
+// 	// 	return nil, err
+// 	// }
+// 	// log.Println("Shift Name ----->", shift.ShiftName)
+// 	// item.ShiftName = shift.ShiftName
+// 	log.Println("Local Time", time.Now())
+// 	log.Println("================================")
+// 	log.Println("UTC Time", time.Now().UTC())
+// 	//-------------------------------------------------
+// 	// First Shift Count
+// 	//-------------------------------------------------
+
+// 	firstShiftCount, err := s.Store.GetFirstShiftProductionCount(
+// 		ctx,
+// 		req.TenantID,
+// 		req.DeviceID,
+// 		req.Station,
+// 		shift.ShiftStart,
+// 		shift.ShiftEnd,
+// 	)
+
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	log.Println("----> shift 1st", firstShiftCount)
+// 	//-------------------------------------------------
+// 	// Shift Production
+// 	//-------------------------------------------------
+// 	currentProductionCount := item.ProductionCount
+// 	item.ProductionCount = item.ProductionCount - firstShiftCount
+
+// 	//-------------------------------------------------
+// 	// Live OEE
+// 	//-------------------------------------------------
+
+// 	log.Printf("Shift Start : %v", shift.ShiftStart)
+// 	log.Printf("Shift Count : %d", item.ProductionCount)
+
+// 	item.OEE = CalculateLiveOEE(
+// 		shift.ShiftStart,
+// 		item.ProductionTime,
+// 		item.ProductionCount,
+// 	)
+
+// 	// Day Production
+
+// 	dayFirst, err := s.shiftProvider.GetProductionDay(ctx, tenantID, item.ProductionTime)
+
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	dayFirstCount, err := s.Store.GetFirstShiftProductionCount(ctx, req.TenantID, req.DeviceID, req.Station, dayFirst.DayStart, dayFirst.DayEnd)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	dayProductionCount := currentProductionCount - dayFirstCount
+
+// 	log.Println("====> Day Production Count ", dayProductionCount)
+
+// 	item.DayProduction = dayProductionCount
+
+// 	item.DayOEE = CalculateLiveOEE(
+// 		dayFirst.DayStart,
+// 		item.ProductionTime,
+// 		item.DayProduction,
+// 	)
+
+// 	log.Println("========== SHIFT ==========")
+// 	log.Println("Shift Name      :", shift.ShiftName)
+// 	log.Println("Shift Start     :", shift.ShiftStart)
+// 	log.Println("Shift End       :", shift.ShiftEnd)
+
+// 	log.Println("========== DAY ==========")
+// 	log.Println("Day Start       :", dayFirst.DayStart)
+// 	log.Println("Day End         :", dayFirst.DayEnd)
+
+// 	log.Println("Production Time :", item.ProductionTime)
+// 	log.Println("Created Time :", item.CreatedAt)
+
+// 	log.Println("Shift Count     :", item.ProductionCount)
+// 	log.Println("Day Count       :", item.DayProduction)
+
+// 	// log.Printf("OEE : %+v", item.OEE)
+
+// 	return item, nil
+// }
 
 // CalculateDayProduction returns today's production count
 // based on the latest machine counter.
