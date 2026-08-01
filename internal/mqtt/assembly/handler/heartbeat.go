@@ -32,9 +32,9 @@ func (h *ProductionHandler) HeartBeatHandler() paho.MessageHandler {
 			)
 			defer cancel()
 
-			log.Println("==================================")
+			log.Println("===============Heart Beat===================")
 			log.Println("===Heart Beat====>", req)
-			log.Println("==================================")
+			log.Println("============================================")
 			// ctx, cancel := context.WithTimeout(
 			// 	context.Background(),
 			// 	5*time.Second,
