@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/rajeshbond/smart/internal/common/utils"
 	"github.com/rajeshbond/smart/internal/http/device/device_data/dto"
@@ -54,13 +53,13 @@ func (s *Service) GetProduction(
 		return nil, fmt.Errorf("shift not found")
 	}
 
-	log.Println("========== SHIFT ==========")
-	log.Println("Shift Name :", shift.ShiftName)
-	log.Println("Shift Start:", shift.ShiftStart)
-	log.Println("Shift End  :", shift.ShiftEnd)
+	// log.Println("========== SHIFT ==========")
+	// log.Println("Shift Name :", shift.ShiftName)
+	// log.Println("Shift Start:", shift.ShiftStart)
+	// log.Println("Shift End  :", shift.ShiftEnd)
 
-	log.Println("Local Time :", time.Now())
-	log.Println("UTC Time   :", time.Now().UTC())
+	// log.Println("Local Time :", time.Now())
+	// log.Println("UTC Time   :", time.Now().UTC())
 
 	//-------------------------------------------------
 	// First Shift Counter
@@ -142,24 +141,24 @@ func (s *Service) GetProduction(
 		item.DayProduction,
 	)
 
-	//-------------------------------------------------
-	// Debug Logs
-	//-------------------------------------------------
+	// //-------------------------------------------------
+	// // Debug Logs
+	// //-------------------------------------------------
 
-	log.Println("========== SHIFT ==========")
-	log.Println("Shift Name      :", shift.ShiftName)
-	log.Println("Shift Start     :", shift.ShiftStart)
-	log.Println("Shift End       :", shift.ShiftEnd)
+	// log.Println("========== SHIFT ==========")
+	// log.Println("Shift Name      :", shift.ShiftName)
+	// log.Println("Shift Start     :", shift.ShiftStart)
+	// log.Println("Shift End       :", shift.ShiftEnd)
 
-	log.Println("========== DAY ==========")
-	log.Println("Day Start       :", dayInfo.DayStart)
-	log.Println("Day End         :", dayInfo.DayEnd)
+	// log.Println("========== DAY ==========")
+	// log.Println("Day Start       :", dayInfo.DayStart)
+	// log.Println("Day End         :", dayInfo.DayEnd)
 
-	log.Println("Production Time :", item.ProductionTime)
-	log.Println("Created Time    :", item.CreatedAt)
+	// log.Println("Production Time :", item.ProductionTime)
+	// log.Println("Created Time    :", item.CreatedAt)
 
-	log.Println("Shift Count     :", item.ProductionCount)
-	log.Println("Day Count       :", item.DayProduction)
+	// log.Println("Shift Count     :", item.ProductionCount)
+	// log.Println("Day Count       :", item.DayProduction)
 
 	return item, nil
 }
