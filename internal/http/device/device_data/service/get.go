@@ -28,10 +28,10 @@ func (s *Service) GetProduction(
 		return nil, err
 	}
 	istNewProductionTime := utils.ToISTNew(item.ProductionTime)
-	log.Println("IST Production -----> ", istNewProductionTime)
-	log.Println("Latest Creation ----->", item.CreatedAt)
-	log.Println("Production Time ----->", item.ProductionTime)
-	log.Println("================================")
+	// log.Println("IST Production -----> ", istNewProductionTime)
+	// log.Println("Latest Creation ----->", item.CreatedAt)
+	// log.Println("Production Time ----->", item.ProductionTime)
+	// log.Println("================================")
 
 	//-------------------------------------------------
 	// Shift Info
@@ -109,7 +109,7 @@ func (s *Service) GetProduction(
 	dayInfo, err := s.shiftProvider.GetProductionDay(
 		ctx,
 		tenantID,
-		item.ProductionTime,
+		istNewProductionTime,
 	)
 
 	if err != nil {
@@ -128,6 +128,8 @@ func (s *Service) GetProduction(
 	if err != nil {
 		return nil, err
 	}
+
+	// log.Println("Day First Count ---->:", dayFirstCount)
 
 	item.DayProduction = currentProductionCount - dayFirstCount
 
