@@ -14,6 +14,10 @@ func (s *PostgresProductionStore) Save(
 	req *dto.ProductionDTO,
 ) error {
 
+	log.Println("==========save===========")
+	log.Println(req)
+	log.Println("=========================")
+
 	// Validate event_id before inserting
 	if req.EventID == "" {
 		return fmt.Errorf("event_id is required")

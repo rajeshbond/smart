@@ -12,16 +12,22 @@ import (
 
 func (h *ProductionHandler) HeartBeatHandler() paho.MessageHandler {
 	return func(client paho.Client, msg paho.Message) {
+
 		// Deep-copy payload safely before passing to background goroutine
 		payload := make([]byte, len(msg.Payload()))
 		copy(payload, msg.Payload())
 
 		go func(data []byte) {
+
+			// Print complete raw MQTT payload
+			// log.Printf("========== COMPLETE MQTT PAYLOAD ==========")
+			// log.Printf("%s", string(data))
+			// log.Printf("===========================================")
+
 			var req dto.ProductionDTO
 
 			if err := json.Unmarshal(data, &req); err != nil {
-				log.Printf("Production JSON Error : %v", err)
-				// FIXED: Use 'data' instead of 'msg.Payload()' to prevent data race
+				log.Printf("Production JSON Error: %v", err)
 				log.Printf("Raw Payload: %q", string(data))
 				return
 			}
@@ -32,28 +38,42 @@ func (h *ProductionHandler) HeartBeatHandler() paho.MessageHandler {
 			)
 			defer cancel()
 
-			log.Println("===============Heart Beat===================")
-			log.Println("===Heart Beat====>", req)
-			log.Println("============================================")
-			// ctx, cancel := context.WithTimeout(
-			// 	context.Background(),
-			// 	5*time.Second,
-			// )
-			// defer cancel()
+			log.Println("=============== Heart Beat ===============")
+			log.Printf("Heart Beat DTO: %+v", req)
+			log.Println("===========================================")
 
-			// if err := h.service.Save(ctx, &req); err != nil {
-			// 	log.Printf("Save Error : %v", err)
-			// 	return
-			// }
-
-			// log.Printf(
-			// 	"Production Saved | EventID=%s | Device=%s | Station=%s | Count=%d | Cycle Time=%.2f sec",
-			// 	req.EventID,
-			// 	req.DeviceID,
-			// 	req.Station,
-			// 	req.Count,
-			// 	req.CycleTimeSec,
-			// )
 		}(payload)
 	}
 }
+
+// Back up code
+
+// func (h *ProductionHandler) HeartBeatHandler() paho.MessageHandler {
+// 	return func(client paho.Client, msg paho.Message) {
+// 		// Deep-copy payload safely before passing to background goroutine
+// 		payload := make([]byte, len(msg.Payload()))
+// 		copy(payload, msg.Payload())
+
+// 		go func(data []byte) {
+// 			var req dto.ProductionDTO
+
+// 			if err := json.Unmarshal(data, &req); err != nil {
+// 				log.Printf("Production JSON Error : %v", err)
+// 				// FIXED: Use 'data' instead of 'msg.Payload()' to prevent data race
+// 				log.Printf("Raw Payload: %q", string(data))
+// 				return
+// 			}
+
+// 			_, cancel := context.WithTimeout(
+// 				context.Background(),
+// 				5*time.Second,
+// 			)
+// 			defer cancel()
+
+// 			log.Println("===============Heart Beat===================")
+// 			log.Println("===Heart Beat====>", req)
+// 			log.Println("============================================")
+
+// 		}(payload)
+// 	}
+// }

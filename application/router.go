@@ -22,6 +22,7 @@ import (
 	devicemaster "github.com/rajeshbond/smart/internal/http/device/device_master"
 	internalsetup "github.com/rajeshbond/smart/internal/http/internal_setup"
 	"github.com/rajeshbond/smart/internal/http/shift"
+	shiftslot "github.com/rajeshbond/smart/internal/http/shift_slot"
 
 	"github.com/rajeshbond/smart/internal/http/tenant"
 	tenantshifts "github.com/rajeshbond/smart/internal/http/tenant_shifts"
@@ -97,6 +98,11 @@ func NewRouter(app *App) http.Handler {
 
 	shiftModule := shift.NewModule(app.DB.SQLDB, tokenAuth)
 	r.Mount("/shift", shiftModule.Router())
+
+	// shift slot
+
+	shiftSlot := shiftslot.NewModule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/shiftslot", shiftSlot.Router())
 
 	// Production Log
 

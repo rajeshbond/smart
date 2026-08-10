@@ -41,6 +41,15 @@ func (h *ProductionHandler) ProductionHandler() paho.MessageHandler {
 			)
 			defer cancel()
 
+			log.Println("===============Device 2 ===================")
+			log.Println("===Device 2 ====>", req)
+			log.Println("============================================")
+			// ctx, cancel := context.WithTimeout(
+			// 	context.Background(),
+			// 	5*time.Second,
+			// )
+			// defer cancel()
+
 			if err := h.service.Save(ctx, &req); err != nil {
 				log.Printf("Save Error : %v", err)
 				return
