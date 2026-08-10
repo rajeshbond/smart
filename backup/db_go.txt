@@ -9,7 +9,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
-
 	"github.com/rajeshbond/smart/config"
 )
 
@@ -18,13 +17,10 @@ type DB struct {
 	PGX   *pgxpool.Pool
 }
 
-// NewDB initializes both sql.DB and pgxpool.
+// NewDB initializes both sql.DB and pgxpool
 func NewDB(cfg *config.Config) *DB {
 
-	// =========================
-	// SQL DB DSN
-	// =========================
-
+	// 🔹 DSN for sql.DB
 	sqlDSN := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.DBHOST,
@@ -35,10 +31,7 @@ func NewDB(cfg *config.Config) *DB {
 		cfg.DBSSL,
 	)
 
-	// =========================
-	// PGX DSN
-	// =========================
-
+	// 🔹 DSN for pgx
 	pgxDSN := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
 		cfg.DBUSER,
@@ -49,57 +42,41 @@ func NewDB(cfg *config.Config) *DB {
 		cfg.DBSSL,
 	)
 
-	// =========================
-	// Startup Context
-	// =========================
-
-	ctx, cancel := context.WithTimeout(
-		context.Background(),
-		5*time.Second,
-	)
+	// ✅ Context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// =========================================================
-	// 1. Setup sql.DB
-	// =========================================================
-
+	// =========================
+	// 🔹 1. Setup sql.DB
+	// =========================
 	sqlDB, err := sql.Open("postgres", sqlDSN)
 	if err != nil {
 		log.Fatal("❌ Failed to open SQL DB:", err)
 	}
 
-	// =========================================================
-	// SQL.DB CONNECTION POOL
-	// =========================================================
-
+	// 🔥 Connection pool tuning (IMPORTANT)
 	sqlDB.SetMaxOpenConns(10)
 	sqlDB.SetMaxIdleConns(5)
-
 	sqlDB.SetConnMaxLifetime(30 * time.Minute)
-	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
 
-	// =========================================================
-	// Ping SQL DB
-	// =========================================================
-
+	// ✅ Ping check
 	if err := sqlDB.PingContext(ctx); err != nil {
 		log.Fatal("❌ SQL DB ping failed:", err)
 	}
 
 	log.Println("✅ SQL DB connected successfully")
 
-	// =========================================================
-	// 2. Setup PGX Pool
-	// =========================================================
-
+	// =========================
+	// 🔹 2. Setup pgxpool
+	// =========================
 	pgxConfig, err := pgxpool.ParseConfig(pgxDSN)
 	if err != nil {
 		log.Fatal("❌ Failed to parse PGX config:", err)
 	}
 
+	// 🔥 Pool tuning (IMPORTANT)
 	pgxConfig.MaxConns = 10
 	pgxConfig.MinConns = 2
-
 	pgxConfig.MaxConnLifetime = time.Hour
 	pgxConfig.MaxConnIdleTime = 30 * time.Minute
 
@@ -108,20 +85,16 @@ func NewDB(cfg *config.Config) *DB {
 		log.Fatal("❌ Failed to connect PGX:", err)
 	}
 
-	// =========================================================
-	// Ping PGX
-	// =========================================================
-
+	// ✅ Ping check
 	if err := pgxPool.Ping(ctx); err != nil {
 		log.Fatal("❌ PGX ping failed:", err)
 	}
 
 	log.Println("✅ PGX connected successfully")
 
-	// =========================================================
-	// Return DB
-	// =========================================================
-
+	// =========================
+	// 🔹 Return combined DB
+	// =========================
 	return &DB{
 		SQLDB: sqlDB,
 		PGX:   pgxPool,
