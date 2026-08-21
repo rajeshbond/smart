@@ -1,4 +1,4 @@
-package shift
+package assemblymaster
 
 import (
 	"log"
@@ -10,19 +10,23 @@ import (
 
 func (m *Module) Router() chi.Router {
 	r := chi.NewRouter()
-	r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Resource type Test Ok"))
+
+	// log.Println("========== ASSEMBLY MASTER ROUTER CREATED ==========")
+
+	r.Get("/test1", func(w http.ResponseWriter, req *http.Request) {
+		log.Println("========== ASSEMBLY MASTER TEST HIT ==========")
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Assembly master Test Ok"))
 	})
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Verifier(m.tokenAuth))
 		r.Use(auth.Authenticator(m.tokenAuth))
 		r.Use(auth.UserContextInjector)
-		r.Post("/createshift", m.Handler.Create)
 
+		r.Post("/createassembly", m.Handler.CreateAssembly)
 	})
-
-	log.Println("========== ALL REGISTERED ROUTES ==========")
 
 	if err := chi.Walk(r, func(
 		method string,
@@ -30,13 +34,11 @@ func (m *Module) Router() chi.Router {
 		handler http.Handler,
 		middlewares ...func(http.Handler) http.Handler,
 	) error {
-		log.Printf("HTTP ROUTE: %-6s %s", method, route)
+		log.Printf("ASSEMBLY MODULE ROUTE: %-6s %s", method, route)
 		return nil
 	}); err != nil {
-		log.Printf("Route walk error: %v", err)
+		log.Printf("Assembly module route error: %v", err)
 	}
-
-	log.Println("============================================")
 
 	return r
 }

@@ -21,6 +21,7 @@ func (m *Module) Router() chi.Router {
 		r.Use(auth.UserContextInjector)
 		r.Post("/assembly", m.Handler.GetProductionLogByTenantIDAndDeviceID)
 		r.Post("/assemblyshift", m.Handler.GetShiftProductionCount)
+		r.Post("/assemblyhr", m.Handler.SavePreviousHour)
 	})
 
 	return r

@@ -16,7 +16,7 @@ func (s *Service) GetProductionLogByTenantIDAndDeviceID(ctx context.Context, req
 func (s *Service) GetProduction(
 	ctx context.Context,
 	req dto.GetProductionRequest,
-	tenantID int64,
+	tenantCode int64,
 ) (*dto.ProductionResponse, error) {
 
 	//-------------------------------------------------
@@ -39,7 +39,7 @@ func (s *Service) GetProduction(
 
 	shift, err := s.shiftProvider.GetShiftByProductionTime(
 		ctx,
-		tenantID,
+		tenantCode,
 		// item.ProductionTime, // Use production time instead of created time
 		istNewProductionTime,
 	)
@@ -108,7 +108,7 @@ func (s *Service) GetProduction(
 
 	dayInfo, err := s.shiftProvider.GetProductionDay(
 		ctx,
-		tenantID,
+		tenantCode,
 		istNewProductionTime,
 	)
 

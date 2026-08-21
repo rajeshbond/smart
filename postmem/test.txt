@@ -1,0 +1,6 @@
+{
+  "tenant_id": "2",
+  "device_id": "02@xoom",
+  "machine_id": "ASM-Aero-Deflector",
+  "station": "none"
+}

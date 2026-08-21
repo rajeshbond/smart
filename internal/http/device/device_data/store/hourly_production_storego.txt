@@ -1,0 +1,677 @@
+package store
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"time"
+
+	"github.com/rajeshbond/smart/internal/http/device/device_data/dto"
+)
+
+// ============================================================
+// GET CURRENT SHIFT
+// ============================================================
+//
+// Handles both:
+//
+// Normal shift:
+// 08:00 -> 20:00
+//
+// Overnight shift:
+// 20:00 -> 08:00
+//
+// ============================================================
+
+func (s *Store) GetCurrentShift(
+	ctx context.Context,
+	tx *sql.Tx,
+	tenantID string,
+	currentTime time.Time,
+) (*dto.ShiftInfoHR, error) {
+
+	const query = `
+		SELECT
+			ts.id,
+			st.id,
+			ts.shift_name,
+			st.shift_start,
+			st.shift_end
+		FROM public.tenant_shift ts
+		INNER JOIN public.shift_timing st
+			ON st.tenant_shift_id = ts.id
+		WHERE ts.tenant_id = $1
+		AND
+		(
+			-- Normal shift
+			(
+				st.shift_start <= st.shift_end
+				AND $2::time >= st.shift_start
+				AND $2::time < st.shift_end
+			)
+
+			OR
+
+			-- Overnight shift
+			(
+				st.shift_start > st.shift_end
+				AND
+				(
+					$2::time >= st.shift_start
+					OR
+					$2::time < st.shift_end
+				)
+			)
+		)
+		ORDER BY st.shift_start
+		LIMIT 1
+	`
+
+	var item dto.ShiftInfoHR
+
+	err := tx.QueryRowContext(
+		ctx,
+		query,
+		tenantID,
+		currentTime,
+	).Scan(
+		&item.TenantShiftID,
+		&item.ShiftTimingID,
+		&item.ShiftName,
+		&item.ShiftStart,
+		&item.ShiftEnd,
+	)
+
+	if err != nil {
+
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf(
+				"current shift not found",
+			)
+		}
+
+		return nil, fmt.Errorf(
+			"get current shift: %w",
+			err,
+		)
+	}
+
+	return &item, nil
+}
+
+// ============================================================
+// GET PREVIOUS COMPLETED HOUR SLOT
+// ============================================================
+//
+// Example:
+//
+// Current time = 22:03
+//
+// Returns:
+//
+// 21:00 -> 22:00
+//
+// At 08:03:
+//
+// Returns:
+//
+// 07:00 -> 08:00
+//
+// slot_index comes directly from shift_hour_slot.
+//
+// ============================================================
+
+func (s *Store) GetPreviousHourSlot(
+	ctx context.Context,
+	tx *sql.Tx,
+	tenantID string,
+	shiftTimingID int64,
+	currentTime time.Time,
+) (*dto.HourSlot, error) {
+
+	const query = `
+		SELECT
+			id,
+			shift_timing_id,
+			slot_index,
+			slot_start,
+			slot_end
+		FROM public.shift_hour_slot
+		WHERE tenant_id = $1
+		  AND shift_timing_id = $2
+		  AND slot_end <= $3::time
+		ORDER BY slot_end DESC
+		LIMIT 1
+	`
+
+	var item dto.HourSlot
+
+	err := tx.QueryRowContext(
+		ctx,
+		query,
+		tenantID,
+		shiftTimingID,
+		currentTime,
+	).Scan(
+		&item.ShiftHourSlotID,
+		&item.ShiftTimingID,
+		&item.SlotIndex,
+		&item.SlotStart,
+		&item.SlotEnd,
+	)
+
+	if err != nil {
+
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf(
+				"previous completed hour slot not found",
+			)
+		}
+
+		return nil, fmt.Errorf(
+			"get previous hour slot: %w",
+			err,
+		)
+	}
+
+	return &item, nil
+}
+
+// ============================================================
+// GET PRODUCTION STATISTICS
+// ============================================================
+//
+// assembly_production_log.production_count is cumulative.
+//
+// Example:
+//
+// Before hour       = 150
+// Last count hour   = 208
+//
+// Hour production:
+//
+// 208 - 150 = 58
+//
+// Also calculates:
+//
+// MIN cycle time
+// AVG cycle time
+// MAX cycle time
+// cycle count
+//
+// ============================================================
+func (s *Store) GetProductionStats(
+	ctx context.Context,
+	tx *sql.Tx,
+
+	tenantID string,
+	deviceID string,
+	station string,
+
+	actualStart time.Time,
+	actualEnd time.Time,
+) (*dto.HourlyProductionStats, error) {
+
+	const query = `
+		WITH hourly_data AS
+		(
+			SELECT
+				production_count,
+				cycle_time_sec,
+				production_time
+			FROM public.assembly_production_log
+			WHERE tenant_id = $1
+			  AND device_id = $2
+			  AND ($3 = '' OR station = $3)
+
+			  -- =============================================
+			  -- STRICT HOURLY SLOT
+			  --
+			  -- Include:
+			  --     >= actual_start
+			  --
+			  -- Exclude:
+			  --     < actual_end
+			  --
+			  -- =============================================
+
+			  AND production_time >= $4
+			  AND production_time < $5
+		),
+
+		start_count AS
+		(
+			SELECT
+				production_count
+			FROM hourly_data
+			ORDER BY production_time ASC
+			LIMIT 1
+		),
+
+		end_count AS
+		(
+			SELECT
+				production_count
+			FROM hourly_data
+			ORDER BY production_time DESC
+			LIMIT 1
+		),
+
+		cycle_stats AS
+		(
+			SELECT
+				COUNT(cycle_time_sec) AS cycle_count,
+
+				MIN(cycle_time_sec)
+					AS min_cycle_time_sec,
+
+				AVG(cycle_time_sec)
+					AS avg_cycle_time_sec,
+
+				MAX(cycle_time_sec)
+					AS max_cycle_time_sec
+
+			FROM hourly_data
+
+			WHERE cycle_time_sec IS NOT NULL
+		)
+
+		SELECT
+
+			-- =============================================
+			-- FIRST PRODUCTION COUNT IN THIS HOUR
+			-- =============================================
+
+			COALESCE(
+				(
+					SELECT production_count
+					FROM start_count
+				),
+				0
+			) AS start_production_count,
+
+			-- =============================================
+			-- LAST PRODUCTION COUNT IN THIS HOUR
+			-- =============================================
+
+			COALESCE(
+				(
+					SELECT production_count
+					FROM end_count
+				),
+				0
+			) AS end_production_count,
+
+			-- =============================================
+			-- HOURLY PRODUCTION
+			-- =============================================
+
+			GREATEST(
+				COALESCE(
+					(
+						SELECT production_count
+						FROM end_count
+					),
+					0
+				)
+				-
+				COALESCE(
+					(
+						SELECT production_count
+						FROM start_count
+					),
+					0
+				),
+				0
+			) AS hourly_production_count,
+
+			cycle_count,
+
+			COALESCE(
+				min_cycle_time_sec,
+				0
+			) AS min_cycle_time_sec,
+
+			COALESCE(
+				avg_cycle_time_sec,
+				0
+			) AS avg_cycle_time_sec,
+
+			COALESCE(
+				max_cycle_time_sec,
+				0
+			) AS max_cycle_time_sec
+
+		FROM cycle_stats;
+	`
+
+	var item dto.HourlyProductionStats
+
+	err := tx.QueryRowContext(
+		ctx,
+		query,
+
+		tenantID,
+		deviceID,
+		station,
+
+		actualStart,
+		actualEnd,
+	).Scan(
+		&item.StartProductionCount,
+		&item.EndProductionCount,
+		&item.HourlyProductionCount,
+		&item.CycleCount,
+		&item.MinCycleTimeSec,
+		&item.AvgCycleTimeSec,
+		&item.MaxCycleTimeSec,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf(
+			"get production statistics: %w",
+			err,
+		)
+	}
+
+	return &item, nil
+}
+
+// func (s *Store) GetProductionStats(
+// 	ctx context.Context,
+// 	tx *sql.Tx,
+
+// 	tenantID string,
+// 	deviceID string,
+// 	station string,
+
+// 	actualStart time.Time,
+// 	actualEnd time.Time,
+// ) (*dto.HourlyProductionStats, error) {
+
+// 	const query = `
+// 		WITH start_count AS
+// 		(
+// 			SELECT
+// 				production_count
+// 			FROM public.assembly_production_log
+// 			WHERE tenant_id = $1
+// 			  AND device_id = $2
+// 			  AND ($3 = '' OR station = $3)
+// 			  AND production_time < $4
+// 			ORDER BY production_time DESC
+// 			LIMIT 1
+// 		),
+
+// 		end_count AS
+// 		(
+// 			SELECT
+// 				production_count
+// 			FROM public.assembly_production_log
+// 			WHERE tenant_id = $1
+// 			  AND device_id = $2
+// 			  AND ($3 = '' OR station = $3)
+// 			  AND production_time >= $4
+// 			  AND production_time < $5
+// 			ORDER BY production_time DESC
+// 			LIMIT 1
+// 		),
+
+// 		cycle_stats AS
+// 		(
+// 			SELECT
+// 				COUNT(cycle_time_sec) AS cycle_count,
+
+// 				MIN(cycle_time_sec) AS min_cycle_time_sec,
+
+// 				AVG(cycle_time_sec) AS avg_cycle_time_sec,
+
+// 				MAX(cycle_time_sec) AS max_cycle_time_sec
+
+// 			FROM public.assembly_production_log
+// 			WHERE tenant_id = $1
+// 			  AND device_id = $2
+// 			  AND ($3 = '' OR station = $3)
+// 			  AND production_time >= $4
+// 			  AND production_time < $5
+// 			  AND cycle_time_sec IS NOT NULL
+// 		)
+
+// 		SELECT
+
+// 			COALESCE(
+// 				(SELECT production_count FROM start_count),
+// 				0
+// 			) AS start_production_count,
+
+// 			COALESCE(
+// 				(SELECT production_count FROM end_count),
+// 				0
+// 			) AS end_production_count,
+
+// 			COALESCE(
+// 				(
+// 					SELECT
+// 						production_count
+// 					FROM end_count
+// 				),
+// 				0
+// 			)
+// 			-
+// 			COALESCE(
+// 				(
+// 					SELECT
+// 						production_count
+// 					FROM start_count
+// 				),
+// 				0
+// 			) AS hourly_production_count,
+
+// 			cycle_count,
+
+// 			COALESCE(min_cycle_time_sec, 0),
+
+// 			COALESCE(avg_cycle_time_sec, 0),
+
+// 			COALESCE(max_cycle_time_sec, 0)
+
+// 		FROM cycle_stats;
+// 	`
+
+// 	var item dto.HourlyProductionStats
+
+// 	err := tx.QueryRowContext(
+// 		ctx,
+// 		query,
+
+// 		tenantID,
+// 		deviceID,
+// 		station,
+
+// 		actualStart,
+// 		actualEnd,
+// 	).Scan(
+// 		&item.StartProductionCount,
+// 		&item.EndProductionCount,
+// 		&item.HourlyProductionCount,
+// 		&item.CycleCount,
+// 		&item.MinCycleTimeSec,
+// 		&item.AvgCycleTimeSec,
+// 		&item.MaxCycleTimeSec,
+// 	)
+
+// 	if err != nil {
+// 		return nil, fmt.Errorf(
+// 			"get production statistics: %w",
+// 			err,
+// 		)
+// 	}
+
+// 	// --------------------------------------------------------
+// 	// Protect against negative cumulative counter
+// 	// --------------------------------------------------------
+
+// 	if item.HourlyProductionCount < 0 {
+// 		item.HourlyProductionCount = 0
+// 	}
+
+// 	return &item, nil
+// }
+
+// ============================================================
+// SAVE HOURLY PRODUCTION
+// ============================================================
+//
+// One row:
+//
+// device
+// machine
+// station
+// production day
+// shift
+// slot
+//
+// Duplicate protection:
+//
+// tenant_id
+// device_id
+// machine_id
+// station
+// production_day
+// shift_timing_id
+// shift_hour_slot_id
+//
+// ============================================================
+
+func (s *Store) SaveHourlyProduction(
+	ctx context.Context,
+	tx *sql.Tx,
+	item *dto.HourlyProduction,
+) error {
+
+	const query = `
+		INSERT INTO public.assembly_hourly_production
+		(
+			tenant_id,
+			customer_id,
+			device_id,
+			machine_id,
+			station,
+			variant,
+
+			production_day,
+
+			tenant_shift_id,
+			shift_timing_id,
+			shift_hour_slot_id,
+			slot_index,
+
+			slot_start,
+			slot_end,
+
+			actual_start,
+			actual_end,
+
+			start_production_count,
+			end_production_count,
+			hourly_production_count,
+
+			cycle_count,
+			min_cycle_time_sec,
+			avg_cycle_time_sec,
+			max_cycle_time_sec,
+
+			created_at,
+			updated_at
+		)
+		VALUES
+		(
+			$1,
+			$2,
+			$3,
+			$4,
+			$5,
+			$6,
+
+			$7,
+
+			$8,
+			$9,
+			$10,
+			$11,
+
+			$12,
+			$13,
+
+			$14,
+			$15,
+
+			$16,
+			$17,
+			$18,
+
+			$19,
+			$20,
+			$21,
+			$22,
+
+			NOW(),
+			NOW()
+		)
+
+		ON CONFLICT
+		(
+			tenant_id,
+			device_id,
+			machine_id,
+			station,
+			production_day,
+			shift_timing_id,
+			shift_hour_slot_id
+		)
+		DO NOTHING;
+	`
+
+	_, err := tx.ExecContext(
+		ctx,
+		query,
+
+		item.TenantID,
+		item.CustomerID,
+		item.DeviceID,
+		item.MachineID,
+		item.Station,
+		item.Variant,
+
+		item.ProductionDay,
+
+		item.TenantShiftID,
+		item.ShiftTimingID,
+		item.ShiftHourSlotID,
+		item.SlotIndex,
+
+		item.SlotStart,
+		item.SlotEnd,
+
+		item.ActualStart,
+		item.ActualEnd,
+
+		item.StartProductionCount,
+		item.EndProductionCount,
+		item.HourlyProductionCount,
+
+		item.CycleCount,
+		item.MinCycleTimeSec,
+		item.AvgCycleTimeSec,
+		item.MaxCycleTimeSec,
+	)
+
+	if err != nil {
+		return fmt.Errorf(
+			"save hourly production: %w",
+			err,
+		)
+	}
+
+	return nil
+}

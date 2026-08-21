@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/rajeshbond/smart/cmd/service"
+	assemblymaster "github.com/rajeshbond/smart/internal/http/assembly_master"
 	"github.com/rajeshbond/smart/internal/http/command"
 	devicedata "github.com/rajeshbond/smart/internal/http/device/device_data"
 	devicemaster "github.com/rajeshbond/smart/internal/http/device/device_master"
@@ -109,6 +110,11 @@ func NewRouter(app *App) http.Handler {
 	productionLogModule := devicedata.NewModule(app.DB.SQLDB, tokenAuth, shiftModule.Store)
 	r.Mount("/proddata", productionLogModule.Router())
 
+	// Assebly master
+
+	assemblyMasterModule := assemblymaster.NewModuleAssembly(app.DB.SQLDB, tokenAuth)
+	r.Mount("/assemblymaster", assemblyMasterModule.Router())
+
 	// Route Mounts Ends here <---------------
 
 	// 4. Device master
@@ -129,3 +135,30 @@ func NewRouter(app *App) http.Handler {
 
 	return r
 }
+
+// Testing Router
+
+// assemblyMasterModule := assemblymaster.NewModuleAssembly(
+// 		app.DB.SQLDB,
+// 		tokenAuth,
+// 	)
+
+// 	assemblyMasterRouter := assemblyMasterModule.Router()
+
+// 	log.Println("========== MOUNTING ASSEMBLY MASTER ==========")
+
+// 	r.Mount("/assemblymaster", assemblyMasterRouter)
+
+// 	log.Println("========== ASSEMBLY MASTER MOUNTED ==========")
+
+// 	if err := chi.Walk(r, func(
+// 		method string,
+// 		route string,
+// 		handler http.Handler,
+// 		middlewares ...func(http.Handler) http.Handler,
+// 	) error {
+// 		log.Printf("ROOT ROUTE: %-6s %s", method, route)
+// 		return nil
+// 	}); err != nil {
+// 		log.Printf("Root route walk error: %v", err)
+// 	}

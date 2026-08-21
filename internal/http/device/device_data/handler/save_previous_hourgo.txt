@@ -1,0 +1,97 @@
+package handler
+
+import (
+	"encoding/json"
+	"log"
+	"net/http"
+
+	"github.com/rajeshbond/smart/internal/auth"
+	"github.com/rajeshbond/smart/internal/auth/permission"
+	"github.com/rajeshbond/smart/internal/common/response"
+	"github.com/rajeshbond/smart/internal/http/device/device_data/dto"
+)
+
+func (h *Handler) SavePreviousHour(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	//----------------------------------------------------------
+	// Authentication
+	//----------------------------------------------------------
+
+	claims, err := auth.MustUserClaims(ctx)
+	if err != nil {
+		response.Error(
+			w,
+			http.StatusUnauthorized,
+			auth.UnAuthorised,
+		)
+
+		return
+	}
+
+	//----------------------------------------------------------
+	// Authorization
+	//----------------------------------------------------------
+
+	if !permission.ProductionLogViewwer(claims.Role) {
+
+		response.Error(
+			w,
+			http.StatusForbidden,
+			auth.PermissionDenied.Error(),
+		)
+
+		return
+	}
+
+	//----------------------------------------------------------
+	// Decode Request
+	//----------------------------------------------------------
+
+	var req dto.SaveHourlyProductionRequest
+
+	err = json.NewDecoder(r.Body).Decode(&req)
+
+	if err != nil {
+		response.Error(
+			w,
+			http.StatusBadRequest,
+			err.Error(),
+		)
+		return
+	}
+
+	// ========================================================
+	// TENANT ID FROM JWT
+	// ========================================================
+	//
+	// Do NOT allow tenant_id from frontend/Postman.
+	//
+	// JWT is the source of tenant identity.
+
+	// ========================================================
+	// SERVICE
+	// ========================================================
+	log.Println(req)
+	log.Println("====================================")
+	log.Println("Tenant_id", req.TenantID)
+	log.Println("Device_id", req.DeviceID)
+	log.Println("Machine_id", req.MachineID)
+	log.Println("Station", req.Station)
+	log.Println("Varient", req.Variant)
+
+	item, err := h.Service.SavePreviousHour(r.Context(), req)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	// ========================================================
+	// SUCCESS
+	// ========================================================
+
+	response.JSON(w, http.StatusOK, item)
+
+	// response.JSON(w, http.StatusOK, "OK")
+
+}

@@ -121,6 +121,10 @@ func (h *ProductionHandler) processProduction(
 	data []byte,
 ) {
 
+	// log.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+	// log.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+	// log.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+	// log.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 	var req dto.ProductionDTO
 
 	// ========================================================
@@ -142,7 +146,7 @@ func (h *ProductionHandler) processProduction(
 
 		return
 	}
-
+	// log
 	// ========================================================
 	// Validate Event ID
 	// ========================================================
@@ -157,6 +161,9 @@ func (h *ProductionHandler) processProduction(
 		return
 	}
 
+	if req.Variant == "" {
+		req.Variant = "none"
+	}
 	// ========================================================
 	// Context
 	// ========================================================
@@ -166,6 +173,10 @@ func (h *ProductionHandler) processProduction(
 		5*time.Second,
 	)
 
+	// log.Println("************************REQ***************")
+	// log.Println(req)
+	// log.Println("******************************************")
+
 	defer cancel()
 
 	// ========================================================
@@ -173,8 +184,10 @@ func (h *ProductionHandler) processProduction(
 	// ========================================================
 
 	log.Printf(
-		"Production Processing | Worker=%d | Device=%s | Station=%s | Count=%d | Cycle=%.2f",
+		"Production Processing | Worker=%d |TenantCode = %s|Variant = %s | Device=%s | Station=%s | Count=%d | Cycle=%.2f",
 		workerID,
+		req.TenantID,
+		req.Variant,
 		req.DeviceID,
 		req.Station,
 		req.Count,
@@ -205,9 +218,10 @@ func (h *ProductionHandler) processProduction(
 	// ========================================================
 
 	log.Printf(
-		"✅ Production Saved | Worker=%d | EventID=%s | Device=%s | Station=%s | Count=%d | Cycle Time=%.2f sec | Duration=%v",
+		"✅ Production Saved | Worker=%d | EventID=%s | Tenant_ID = %s|Device=%s | Station=%s | Count=%d | Cycle Time=%.2f sec | Duration=%v",
 		workerID,
 		req.EventID,
+		req.TenantID,
 		req.DeviceID,
 		req.Station,
 		req.Count,
