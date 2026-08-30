@@ -8,23 +8,80 @@ import (
 	"github.com/rajeshbond/smart/internal/mqtt/assembly/store"
 )
 
-type Module struct {
-	Store   store.ProductionStore
-	Service service.ProductionSerive
-	Handler *handler.ProductionHandler
+// ============================================================
+// MQTT HANDLERS
+// ============================================================
+
+type MQTTHandlers struct {
+	Production *handler.ProductionHandler
+	Heartbeat  *handler.HeartbeatHandler
 }
+
+// ============================================================
+// ASSEMBLY MODULE
+// ============================================================
+
+type Module struct {
+	Store store.ProductionStore
+
+	Service service.ProductionSerive
+
+	Handlers MQTTHandlers
+}
+
+// ============================================================
+// NEW MODULE
+// ============================================================
 
 func NewModule(db *sql.DB) *Module {
 
-	productionStore := store.NewProductionStore(db)
+	// --------------------------------------------------------
+	// Store
+	// --------------------------------------------------------
 
-	productionService := service.NewProductionService(productionStore)
+	productionStore :=
+		store.NewProductionStore(db)
 
-	productionHandler := handler.NewProductionHandler(&productionService)
+	// --------------------------------------------------------
+	// Production service
+	// --------------------------------------------------------
+
+	productionService :=
+		service.NewProductionService(
+			productionStore,
+		)
+
+	// --------------------------------------------------------
+	// Production handler
+	// --------------------------------------------------------
+
+	productionHandler :=
+		handler.NewProductionHandler(
+			&productionService,
+		)
+
+	// --------------------------------------------------------
+	// Heartbeat handler
+	// --------------------------------------------------------
+
+	heartbeatHandler :=
+		handler.NewHeartbeatHandler()
+
+	// --------------------------------------------------------
+	// Module
+	// --------------------------------------------------------
 
 	return &Module{
-		Store:   productionStore,
+
+		Store: productionStore,
+
 		Service: productionService,
-		Handler: productionHandler,
+
+		Handlers: MQTTHandlers{
+
+			Production: productionHandler,
+
+			Heartbeat: heartbeatHandler,
+		},
 	}
 }

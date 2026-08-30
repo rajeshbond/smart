@@ -1,79 +1,160 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"log"
+	"sync/atomic"
 	"time"
 
 	paho "github.com/eclipse/paho.mqtt.golang"
-	dto "github.com/rajeshbond/smart/internal/mqtt/assembly/production_dto"
 )
 
-func (h *ProductionHandler) HeartBeatHandler() paho.MessageHandler {
-	return func(client paho.Client, msg paho.Message) {
+// ============================================================
+// HEARTBEAT HANDLER
+// ============================================================
+//
+// Heartbeat is intentionally kept separate from production.
+//
+// Production:
+//     ProductionHandler
+//
+// Heartbeat:
+//     HeartbeatHandler
+//
+// This handler receives heartbeat MQTT messages and validates
+// that the payload is valid JSON.
+//
+// Database persistence for heartbeat should be added through
+// the actual heartbeat service once its DTO/service contract
+// is available.
+// ============================================================
 
-		// Deep-copy payload safely before passing to background goroutine
-		payload := make([]byte, len(msg.Payload()))
-		copy(payload, msg.Payload())
+type HeartbeatHandler struct {
+	receivedCount atomic.Uint64
+	validCount    atomic.Uint64
+	failedCount   atomic.Uint64
+}
 
-		go func(data []byte) {
+// ============================================================
+// CONSTRUCTOR
+// ============================================================
 
-			// Print complete raw MQTT payload
-			// log.Printf("========== COMPLETE MQTT PAYLOAD ==========")
-			// log.Printf("%s", string(data))
-			// log.Printf("===========================================")
+func NewHeartbeatHandler() *HeartbeatHandler {
 
-			var req dto.ProductionDTO
+	h := &HeartbeatHandler{}
 
-			if err := json.Unmarshal(data, &req); err != nil {
-				log.Printf("Production JSON Error: %v", err)
-				log.Printf("Raw Payload: %q", string(data))
-				return
-			}
+	log.Println("============================================================")
+	log.Println("Heartbeat Handler Started")
+	log.Println("============================================================")
 
-			_, cancel := context.WithTimeout(
-				context.Background(),
-				5*time.Second,
+	return h
+}
+
+// ============================================================
+// MQTT MESSAGE HANDLER
+// ============================================================
+
+func (h *HeartbeatHandler) HeartBeatHandler() paho.MessageHandler {
+
+	return func(
+		client paho.Client,
+		msg paho.Message,
+	) {
+
+		if msg == nil {
+
+			h.failedCount.Add(1)
+
+			log.Println(
+				"❌ Heartbeat MQTT message is nil",
 			)
-			defer cancel()
 
-			log.Println("=============== Heart Beat ===============")
-			log.Printf("Heart Beat DTO: %+v", req)
-			log.Println("===========================================")
+			return
+		}
 
-		}(payload)
+		h.receivedCount.Add(1)
+
+		// ----------------------------------------------------
+		// Copy Paho payload.
+		// ----------------------------------------------------
+
+		payload := make(
+			[]byte,
+			len(msg.Payload()),
+		)
+
+		copy(
+			payload,
+			msg.Payload(),
+		)
+
+		// ----------------------------------------------------
+		// Validate JSON.
+		// ----------------------------------------------------
+
+		var raw json.RawMessage
+
+		if err := json.Unmarshal(
+			payload,
+			&raw,
+		); err != nil {
+
+			h.failedCount.Add(1)
+
+			log.Printf(
+				"❌ Heartbeat JSON Error | Error=%v | Payload=%q",
+				err,
+				string(payload),
+			)
+
+			return
+		}
+
+		h.validCount.Add(1)
+
+		log.Printf(
+			"💓 Heartbeat Received | Payload=%s",
+			string(payload),
+		)
 	}
 }
 
-// Back up code
+// ============================================================
+// STATS
+// ============================================================
 
-// func (h *ProductionHandler) HeartBeatHandler() paho.MessageHandler {
-// 	return func(client paho.Client, msg paho.Message) {
-// 		// Deep-copy payload safely before passing to background goroutine
-// 		payload := make([]byte, len(msg.Payload()))
-// 		copy(payload, msg.Payload())
+type HeartbeatStats struct {
+	Received uint64
+	Valid    uint64
+	Failed   uint64
+}
 
-// 		go func(data []byte) {
-// 			var req dto.ProductionDTO
+func (h *HeartbeatHandler) Stats() HeartbeatStats {
 
-// 			if err := json.Unmarshal(data, &req); err != nil {
-// 				log.Printf("Production JSON Error : %v", err)
-// 				// FIXED: Use 'data' instead of 'msg.Payload()' to prevent data race
-// 				log.Printf("Raw Payload: %q", string(data))
-// 				return
-// 			}
+	return HeartbeatStats{
+		Received: h.receivedCount.Load(),
+		Valid:    h.validCount.Load(),
+		Failed:   h.failedCount.Load(),
+	}
+}
 
-// 			_, cancel := context.WithTimeout(
-// 				context.Background(),
-// 				5*time.Second,
-// 			)
-// 			defer cancel()
+// ============================================================
+// CLOSE
+// ============================================================
 
-// 			log.Println("===============Heart Beat===================")
-// 			log.Println("===Heart Beat====>", req)
-// 			log.Println("============================================")
+func (h *HeartbeatHandler) Close() {
 
-// 		}(payload)
-// 	}
-// }
+	stats := h.Stats()
+
+	log.Printf(
+		"💓 Heartbeat Handler Stopped | "+
+			"Received=%d | Valid=%d | Failed=%d",
+		stats.Received,
+		stats.Valid,
+		stats.Failed,
+	)
+
+	// Keep time imported/useful if heartbeat processing is
+	// extended later.
+	_ = time.Second
+}

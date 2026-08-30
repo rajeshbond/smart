@@ -1,9 +1,13 @@
 package imm
 
-// Telemetry data
+const (
+	TopicProduction = "factory/imm/production/+"
 
-const TopicTelemrty = "tenant/+/imm/+/telemetry"
+	TopicHeartbeat = "factory/imm/heartbeat/+"
 
-// Heartbeat (for watch dog)
+	TopicStatus = "factory/imm/status/+"
 
-const TopicHeartbeat = "tenant/+/imm/+/heartbeat"
+	TopicAlarm = "factory/imm/alarm/+"
+
+	TopicCommand = "factory/imm/command/"
+)

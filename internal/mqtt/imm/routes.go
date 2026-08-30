@@ -1,4 +1,4 @@
-package assembly
+package imm
 
 import (
 	"log"
@@ -10,7 +10,7 @@ import (
 // REGISTER MQTT ROUTES
 // ============================================================
 
-func (m *Module) RegisterMQTTAssemblyRoute(
+func (m *Module) RegisterMQTTIMMRoutes(
 	client paho.Client,
 	subscribe func(
 		paho.Client,
@@ -20,7 +20,7 @@ func (m *Module) RegisterMQTTAssemblyRoute(
 ) {
 
 	log.Println("------------------------------------------------")
-	log.Println("Registering Assembly MQTT Routes...")
+	log.Println("Registering IMM MQTT Routes...")
 	log.Println("------------------------------------------------")
 
 	// ========================================================
@@ -34,7 +34,7 @@ func (m *Module) RegisterMQTTAssemblyRoute(
 	)
 
 	log.Printf(
-		"✅ Production Route Registered | Topic=%s",
+		"✅ IMM Production Route Registered | Topic=%s",
 		TopicProduction,
 	)
 
@@ -45,15 +45,15 @@ func (m *Module) RegisterMQTTAssemblyRoute(
 	subscribe(
 		client,
 		TopicHeartbeat,
-		m.Handlers.Heartbeat.HeartBeatHandler(),
+		m.Handlers.Heartbeat.HeartbeatHandler(),
 	)
 
 	log.Printf(
-		"✅ Heartbeat Route Registered | Topic=%s",
+		"✅ IMM Heartbeat Route Registered | Topic=%s",
 		TopicHeartbeat,
 	)
 
 	log.Println("------------------------------------------------")
-	log.Println("Assembly MQTT Routes Registered")
+	log.Println("IMM MQTT Routes Registered")
 	log.Println("------------------------------------------------")
 }
