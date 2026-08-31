@@ -34,12 +34,24 @@ func (h *HeartbeatHandler) HeartbeatHandler() paho.MessageHandler {
 		msg paho.Message,
 	) {
 
+		// --------------------------------------------------------
+		// NIL MESSAGE CHECK
+		// --------------------------------------------------------
+
 		if msg == nil {
 			log.Println("❌ IMM Heartbeat message is nil")
 			return
 		}
 
-		var req dto.HeartbeatDTO
+		// --------------------------------------------------------
+		// DTO
+		// --------------------------------------------------------
+
+		var req dto.IMMHeartbeatDTO
+
+		// --------------------------------------------------------
+		// JSON UNMARSHAL
+		// --------------------------------------------------------
 
 		if err := json.Unmarshal(
 			msg.Payload(),
@@ -47,18 +59,39 @@ func (h *HeartbeatHandler) HeartbeatHandler() paho.MessageHandler {
 		); err != nil {
 
 			log.Printf(
-				"❌ IMM Heartbeat JSON Error | Error=%v",
+				"❌ IMM Heartbeat JSON Error | Error=%v | Payload=%s",
 				err,
+				string(msg.Payload()),
 			)
 
 			return
 		}
 
+		// --------------------------------------------------------
+		// LOG HEARTBEAT
+		// --------------------------------------------------------
+
 		log.Printf(
-			"💓 IMM Heartbeat | Device=%s | Machine=%s | Tenant=%s",
+			"💓 IMM Heartbeat | Device=%s | Machine=%s | Tenant=%d | Status=%s | RSSI=%d",
 			req.DeviceID,
 			req.MachineID,
 			req.TenantID,
+			req.Status,
+			req.RSSI,
+		)
+
+		// --------------------------------------------------------
+		// DETAILED LOG
+		// --------------------------------------------------------
+
+		log.Printf(
+			"   Mold=%s | Production=%d | CycleTime=%.3f sec | IP=%s | MAC=%s | Timestamp=%s",
+			req.MoldNo,
+			req.ProductionCount,
+			req.LastCycleTimeSec,
+			req.IPAddress,
+			req.MACID,
+			req.Timestamp.Format("2006-01-02 15:04:05"),
 		)
 	}
 }
