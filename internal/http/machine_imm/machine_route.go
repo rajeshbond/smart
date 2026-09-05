@@ -1,4 +1,4 @@
-package permission
+package machine
 
 import (
 	"log"
@@ -8,14 +8,14 @@ import (
 	"github.com/rajeshbond/smart/internal/auth"
 )
 
-func (m *PermissionModule) Router() chi.Router {
+func (m *MachineModule) Router() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/test1", func(w http.ResponseWriter, req *http.Request) {
-		log.Println("========== Permission TEST HIT ==========")
+		log.Println("========== Machine IMM TEST HIT ==========")
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Permission master Test Ok"))
+		w.Write([]byte("Machine IMM master Test Ok"))
 	})
 
 	r.Group(func(r chi.Router) {

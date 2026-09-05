@@ -1,4 +1,4 @@
-package permission
+package mold
 
 import (
 	"log"
@@ -8,14 +8,14 @@ import (
 	"github.com/rajeshbond/smart/internal/auth"
 )
 
-func (m *PermissionModule) Router() chi.Router {
+func (m *MoldModule) Router() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/test1", func(w http.ResponseWriter, req *http.Request) {
-		log.Println("========== Permission TEST HIT ==========")
+		log.Println("========== Mold TEST HIT ==========")
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Permission master Test Ok"))
+		w.Write([]byte("Mold master Test Ok"))
 	})
 
 	r.Group(func(r chi.Router) {
