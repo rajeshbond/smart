@@ -19,6 +19,7 @@ import (
 	"github.com/rajeshbond/smart/cmd/service"
 	assemblymaster "github.com/rajeshbond/smart/internal/http/assembly_master"
 	"github.com/rajeshbond/smart/internal/http/command"
+	departmentmaster "github.com/rajeshbond/smart/internal/http/department_master"
 	devicedata "github.com/rajeshbond/smart/internal/http/device/device_data"
 	devicemaster "github.com/rajeshbond/smart/internal/http/device/device_master"
 	internalsetup "github.com/rajeshbond/smart/internal/http/internal_setup"
@@ -97,6 +98,11 @@ func NewRouter(app *App) http.Handler {
 	// Permission router
 	permissionModule := permission.NewPermissionModule(app.DB.SQLDB, tokenAuth)
 	r.Mount("/permission", permissionModule.Router())
+
+	// Depertment
+
+	departmentRoute := departmentmaster.NewDeptModule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/dept", departmentRoute.Router())
 
 	// Tenant shift
 	tenantShiftMoulde := tenantshifts.NewModule(app.DB.SQLDB, tokenAuth)
