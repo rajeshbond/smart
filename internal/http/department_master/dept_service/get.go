@@ -30,15 +30,10 @@ package deptservice
 
 // 	return s.DeptStore.GetByID(
 // 		ctx,
-// 		package service
-
-// import (
-// 	"context"
-// 	"fmt"
-
-// 	"github.com/rajeshbond/smart/internal/auth"
-// 	"github.com/rajeshbond/smart/internal/http/department/dto"
-// )
+// 		s.Store.db,
+// 		id,
+// 	)
+// }
 
 // // ============================================================
 // // GET
