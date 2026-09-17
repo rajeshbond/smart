@@ -1,8 +1,6 @@
-package dto
+package permissiondto
 
 import "time"
-
-// Permission represents a permission record.
 
 // Permission represents a permission record.
 type Permission struct {
@@ -42,7 +40,6 @@ type UpdatePermissionRequest struct {
 	CreatePerm bool `json:"create_perm"`
 	ReadPerm   bool `json:"read_perm"`
 	UpdatePerm bool `json:"update_perm"`
-
 	DeletePerm bool `json:"delete_perm"`
 
 	UpdatedBy *int64 `json:"updated_by,omitempty"`

@@ -4,6 +4,17 @@ import (
 	"strings"
 )
 
+func IsXoomUser(roler string) bool {
+	switch strings.ToLower(roler) {
+	case
+		RoleSuperAdmin,
+		RoleXoomAdmin,
+		RoleXoomUser:
+		return true
+	}
+	return false
+}
+
 func CanCreateDevice(role string) bool {
 	switch strings.ToLower(role) {
 	case
