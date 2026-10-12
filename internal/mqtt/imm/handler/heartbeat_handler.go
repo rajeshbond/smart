@@ -72,7 +72,8 @@ func (h *HeartbeatHandler) HeartbeatHandler() paho.MessageHandler {
 		// --------------------------------------------------------
 
 		log.Printf(
-			"💓 IMM Heartbeat | Device=%s | Machine=%s | Tenant=%d | Status=%s | RSSI=%d",
+			"💓 IMM Heartbeat |Event = %s | Device=%s | Machine=%s | Tenant=%d | Status=%s | RSSI=%d ",
+			req.EventID,
 			req.DeviceID,
 			req.MachineID,
 			req.TenantID,
@@ -85,10 +86,8 @@ func (h *HeartbeatHandler) HeartbeatHandler() paho.MessageHandler {
 		// --------------------------------------------------------
 
 		log.Printf(
-			"   Mold=%s | Production=%d | CycleTime=%.3f sec | IP=%s | MAC=%s | Timestamp=%s",
-			req.MoldNo,
-			req.ProductionCount,
-			req.LastCycleTimeSec,
+			"  IP=%s | MAC=%s | Timestamp=%s",
+
 			req.IPAddress,
 			req.MACID,
 			req.Timestamp.Format("2006-01-02 15:04:05"),
