@@ -19,9 +19,13 @@ import (
 	"github.com/rajeshbond/smart/cmd/service"
 	assemblymaster "github.com/rajeshbond/smart/internal/http/assembly_master"
 	"github.com/rajeshbond/smart/internal/http/command"
+	departmentmaster "github.com/rajeshbond/smart/internal/http/department_master"
 	devicedata "github.com/rajeshbond/smart/internal/http/device/device_data"
 	devicemaster "github.com/rajeshbond/smart/internal/http/device/device_master"
 	internalsetup "github.com/rajeshbond/smart/internal/http/internal_setup"
+	machine "github.com/rajeshbond/smart/internal/http/machine_imm"
+	"github.com/rajeshbond/smart/internal/http/mold"
+	"github.com/rajeshbond/smart/internal/http/permission"
 	"github.com/rajeshbond/smart/internal/http/shift"
 	shiftslot "github.com/rajeshbond/smart/internal/http/shift_slot"
 
@@ -91,6 +95,15 @@ func NewRouter(app *App) http.Handler {
 	usersModule := users.NewModule(app.DB.SQLDB, tokenAuth, userRoleModule.Service, tenantModule.Service)
 	r.Mount("/users", usersModule.Router())
 
+	// Permission router
+	permissionModule := permission.NewPermissionModule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/permission", permissionModule.Router())
+
+	// Depertment
+
+	departmentRoute := departmentmaster.NewDeptModule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/dept", departmentRoute.Router())
+
 	// Tenant shift
 	tenantShiftMoulde := tenantshifts.NewModule(app.DB.SQLDB, tokenAuth)
 	r.Mount("/tenantshift", tenantShiftMoulde.Router())
@@ -109,6 +122,16 @@ func NewRouter(app *App) http.Handler {
 
 	productionLogModule := devicedata.NewModule(app.DB.SQLDB, tokenAuth, shiftModule.Store)
 	r.Mount("/proddata", productionLogModule.Router())
+
+	// Mold Master
+
+	moldModule := mold.NewMoldModeule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/mold", moldModule.Router())
+
+	// Imm Machine
+
+	machineImmModule := machine.NewMachineModule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/imachine", machineImmModule.Router())
 
 	// Assebly master
 

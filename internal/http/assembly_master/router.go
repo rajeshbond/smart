@@ -8,6 +8,7 @@ import (
 	"github.com/rajeshbond/smart/internal/auth"
 )
 
+
 func (m *Module) Router() chi.Router {
 	r := chi.NewRouter()
 
