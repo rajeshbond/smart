@@ -24,6 +24,7 @@ func (s *PostgresProductionStore) Save(
 	}
 
 	const query = `
+<<<<<<< HEAD
 		INSERT INTO assembly_production_log
 		(
 			event_id,
@@ -42,6 +43,36 @@ func (s *PostgresProductionStore) Save(
 		)
 		ON CONFLICT (event_id) DO NOTHING;
 	`
+=======
+	INSERT INTO assembly_production_log
+	(
+		event_id,
+		tenant_id,
+		customer_id,
+		device_id,
+		machine_id,
+		station,
+		production_count,
+		cycle_time_sec,
+		production_time,
+		variant
+	)
+	VALUES
+	(
+		$1,
+		$2,
+		$3,
+		$4,
+		$5,
+		$6,
+		$7,
+		$8,
+		$9,
+		$10
+	)
+	ON CONFLICT (event_id) DO NOTHING;
+`
+>>>>>>> ac0246d3717753324e52eca15a89848498ea0cc7
 
 	res, err := s.db.ExecContext(
 		ctx,
@@ -55,6 +86,7 @@ func (s *PostgresProductionStore) Save(
 		req.Count,
 		req.CycleTimeSec,
 		req.Timestamp,
+		req.Variant,
 	)
 	if err != nil {
 		return err

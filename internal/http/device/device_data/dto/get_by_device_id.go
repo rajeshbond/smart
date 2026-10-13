@@ -12,7 +12,7 @@ type GetProductionRequest struct {
 type ProductionResponse1 struct {
 	EventID string `json:"event_id"`
 
-	TenantID string `json:"tenant_id"`
+	TenantCode string `json:"tenant_id"`
 
 	CustomerID string `json:"customer_id"`
 

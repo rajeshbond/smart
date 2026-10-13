@@ -1,0 +1,1125 @@
+package service
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/rajeshbond/smart/internal/http/device/device_data/dto"
+)
+
+// ============================================================
+// SAVE PREVIOUS HOUR
+// ============================================================
+
+func (s *Service) SavePreviousHour(
+	ctx context.Context,
+	req dto.SaveHourlyProductionRequest,
+) (*dto.HourlyProduction, error) {
+
+	// ========================================================
+	// VALIDATION
+	// ========================================================
+
+	if s == nil || s.Store == nil {
+		return nil, fmt.Errorf(
+			"hourly production service/store is nil",
+		)
+	}
+
+	if req.TenantID == "" {
+		return nil, fmt.Errorf(
+			"tenant_id is required",
+		)
+	}
+
+	if req.DeviceID == "" {
+		return nil, fmt.Errorf(
+			"device_id is required",
+		)
+	}
+
+	if req.MachineID == "" {
+		return nil, fmt.Errorf(
+			"machine_id is required",
+		)
+	}
+
+	if req.Station == "" {
+		return nil, fmt.Errorf(
+			"station is required",
+		)
+	}
+
+	// ========================================================
+	// CUSTOMER ID
+	// ========================================================
+
+	customerID := ""
+
+	if req.CustomerID != nil {
+		customerID = *req.CustomerID
+	}
+
+	// ========================================================
+	// VARIANT
+	// ========================================================
+
+	variant := ""
+
+	if req.Variant != nil {
+		variant = *req.Variant
+	}
+
+	// ========================================================
+	// IST LOCATION
+	// ========================================================
+
+	istLocation, err := time.LoadLocation(
+		"Asia/Kolkata",
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf(
+			"load IST timezone: %w",
+			err,
+		)
+	}
+
+	// ========================================================
+	// CURRENT TIME
+	// ========================================================
+
+	now := time.Now().In(istLocation)
+
+	// ========================================================
+	// BEGIN TRANSACTION
+	// ========================================================
+
+	tx, err := s.Store.BeginTx(
+		ctx,
+		nil,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf(
+			"begin transaction: %w",
+			err,
+		)
+	}
+
+	committed := false
+
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
+	// ========================================================
+	// GET CURRENT SHIFT
+	// ========================================================
+
+	shift, err := s.Store.GetCurrentShift(
+		ctx,
+		tx,
+		req.TenantID,
+		now,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf(
+			"get current shift: %w",
+			err,
+		)
+	}
+
+	if shift == nil {
+		return nil, fmt.Errorf(
+			"current shift is nil",
+		)
+	}
+
+	// ========================================================
+	// GET PREVIOUS HOUR SLOT
+	// ========================================================
+
+	slot, err := s.Store.GetPreviousHourSlot(
+		ctx,
+		tx,
+		req.TenantID,
+		shift.ShiftTimingID,
+		now,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf(
+			"get previous hour slot: %w",
+			err,
+		)
+	}
+
+	if slot == nil {
+		return nil, fmt.Errorf(
+			"previous hour slot is nil",
+		)
+	}
+
+	// ========================================================
+	// DETERMINE PRODUCTION DAY
+	// ========================================================
+	//
+	// Example:
+	//
+	// Shift B:
+	// 20:00 -> 08:00
+	//
+	// At:
+	// 13-Aug 22:00
+	//
+	// Production Day:
+	// 13-Aug
+	//
+	// At:
+	// 14-Aug 01:00
+	//
+	// Production Day:
+	// 13-Aug
+	//
+	// ========================================================
+
+	productionDay := now
+
+	if isOvernightShift(shift) {
+
+		currentClock := clockSeconds(now)
+
+		shiftEndClock := clockSeconds(
+			shift.ShiftEnd,
+		)
+
+		// After midnight and before shift end.
+		if currentClock < shiftEndClock {
+
+			productionDay = productionDay.AddDate(
+				0,
+				0,
+				-1,
+			)
+		}
+	}
+
+	// ========================================================
+	// NORMALIZE PRODUCTION DAY
+	// ========================================================
+
+	productionDay = time.Date(
+		productionDay.Year(),
+		productionDay.Month(),
+		productionDay.Day(),
+		0,
+		0,
+		0,
+		0,
+		istLocation,
+	)
+
+	// ========================================================
+	// DETERMINE ACTUAL SLOT DATE
+	// ========================================================
+	//
+	// IMPORTANT:
+	//
+	// PostgreSQL TIME may arrive as:
+	//
+	// slot.SlotStart:
+	// 0000-01-01 00:00:00
+	//
+	// slot.SlotEnd:
+	// 0000-01-01 01:00:00
+	//
+	// We IGNORE that artificial date.
+	//
+	// We only use:
+	//
+	// Hour()
+	// Minute()
+	// Second()
+	//
+	// ========================================================
+
+	actualSlotDate := productionDay
+
+	if isOvernightShift(shift) {
+
+		slotStartClock := clockSeconds(
+			slot.SlotStart,
+		)
+
+		shiftStartClock := clockSeconds(
+			shift.ShiftStart,
+		)
+
+		// ----------------------------------------------------
+		// Example:
+		//
+		// Shift:
+		// 20:00 -> 08:00
+		//
+		// Slot:
+		// 00:00 -> 01:00
+		//
+		// 00:00 < 20:00
+		//
+		// Therefore this slot belongs to the next
+		// calendar date.
+		// ----------------------------------------------------
+
+		if slotStartClock < shiftStartClock {
+
+			actualSlotDate = actualSlotDate.AddDate(
+				0,
+				0,
+				1,
+			)
+		}
+	}
+
+	// ========================================================
+	// ACTUAL START
+	// ========================================================
+	//
+	// IMPORTANT:
+	//
+	// We construct a NEW time.Time.
+	//
+	// We do NOT use the date contained inside slot.SlotStart.
+	//
+	// ========================================================
+
+	actualStart := time.Date(
+		actualSlotDate.Year(),
+		actualSlotDate.Month(),
+		actualSlotDate.Day(),
+
+		slot.SlotStart.Hour(),
+		slot.SlotStart.Minute(),
+		slot.SlotStart.Second(),
+		0,
+
+		istLocation,
+	)
+
+	// ========================================================
+	// ACTUAL END
+	// ========================================================
+
+	actualEnd := time.Date(
+		actualSlotDate.Year(),
+		actualSlotDate.Month(),
+		actualSlotDate.Day(),
+
+		slot.SlotEnd.Hour(),
+		slot.SlotEnd.Minute(),
+		slot.SlotEnd.Second(),
+		0,
+
+		istLocation,
+	)
+
+	// ========================================================
+	// CROSS MIDNIGHT
+	// ========================================================
+	//
+	// Example:
+	//
+	// 23:00 -> 00:00
+	//
+	// actualEnd must become next day.
+	//
+	// ========================================================
+
+	if !actualEnd.After(actualStart) {
+
+		actualEnd = actualEnd.AddDate(
+			0,
+			0,
+			1,
+		)
+	}
+
+	// ========================================================
+	// VALIDATE
+	// ========================================================
+
+	if !actualEnd.After(actualStart) {
+
+		return nil, fmt.Errorf(
+			"invalid hourly slot: start=%v end=%v",
+			actualStart,
+			actualEnd,
+		)
+	}
+
+	// ========================================================
+	// DEBUG
+	// ========================================================
+
+	fmt.Printf(
+		"\n"+
+			"========== HOURLY SLOT DEBUG ==========\n"+
+			"Current IST       : %v\n"+
+			"Production Day    : %v\n"+
+			"Shift Start       : %v\n"+
+			"Shift End         : %v\n"+
+			"Slot Start        : %v\n"+
+			"Slot End          : %v\n"+
+			"Overnight Shift   : %v\n"+
+			"Actual Slot Date  : %v\n"+
+			"Actual Start      : %v\n"+
+			"Actual End        : %v\n"+
+			"========================================\n\n",
+		now,
+		productionDay,
+		shift.ShiftStart,
+		shift.ShiftEnd,
+		slot.SlotStart,
+		slot.SlotEnd,
+		isOvernightShift(shift),
+		actualSlotDate,
+		actualStart,
+		actualEnd,
+	)
+
+	// ========================================================
+	// GET PRODUCTION STATISTICS
+	// ========================================================
+
+	stats, err := s.Store.GetProductionStats(
+		ctx,
+		tx,
+
+		req.TenantID,
+		req.DeviceID,
+		req.Station,
+
+		actualStart,
+		actualEnd,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf(
+			"get production stats: %w",
+			err,
+		)
+	}
+
+	if stats == nil {
+		return nil, fmt.Errorf(
+			"production stats is nil",
+		)
+	}
+
+	// ========================================================
+	// CREATE HOURLY PRODUCTION
+	// ========================================================
+
+	item := &dto.HourlyProduction{
+
+		TenantID: req.TenantID,
+
+		CustomerID: customerID,
+
+		DeviceID: req.DeviceID,
+
+		MachineID: req.MachineID,
+
+		Station: req.Station,
+
+		Variant: variant,
+
+		// ----------------------------------------------------
+		// Production Day
+		// ----------------------------------------------------
+
+		ProductionDay: productionDay,
+
+		// ----------------------------------------------------
+		// Shift
+		// ----------------------------------------------------
+
+		TenantShiftID: shift.TenantShiftID,
+
+		ShiftTimingID: shift.ShiftTimingID,
+
+		// ----------------------------------------------------
+		// Hourly Slot
+		// ----------------------------------------------------
+
+		ShiftHourSlotID: slot.ShiftHourSlotID,
+
+		SlotIndex: slot.SlotIndex,
+
+		SlotStart: slot.SlotStart,
+
+		SlotEnd: slot.SlotEnd,
+
+		// ----------------------------------------------------
+		// Actual Timestamp
+		// ----------------------------------------------------
+
+		ActualStart: actualStart,
+
+		ActualEnd: actualEnd,
+
+		// ----------------------------------------------------
+		// Production
+		// ----------------------------------------------------
+
+		StartProductionCount: stats.StartProductionCount,
+
+		EndProductionCount: stats.EndProductionCount,
+
+		HourlyProductionCount: stats.HourlyProductionCount,
+
+		// ----------------------------------------------------
+		// Cycle Time
+		// ----------------------------------------------------
+
+		CycleCount: stats.CycleCount,
+
+		MinCycleTimeSec: stats.MinCycleTimeSec,
+
+		AvgCycleTimeSec: stats.AvgCycleTimeSec,
+
+		MaxCycleTimeSec: stats.MaxCycleTimeSec,
+	}
+
+	// ========================================================
+	// DEBUG LOG
+	// ========================================================
+
+	fmt.Printf(
+		"========== HOURLY PRODUCTION ==========\n"+
+			"TenantID: %s\n"+
+			"CustomerID: %s\n"+
+			"DeviceID: %s\n"+
+			"MachineID: %s\n"+
+			"Station: %s\n"+
+			"Variant: %s\n"+
+			"ProductionDay: %v\n"+
+			"TenantShiftID: %d\n"+
+			"ShiftTimingID: %d\n"+
+			"ShiftHourSlotID: %d\n"+
+			"SlotIndex: %d\n"+
+			"SlotStart: %v\n"+
+			"SlotEnd: %v\n"+
+			"ActualStart: %v\n"+
+			"ActualEnd: %v\n"+
+			"StartCount: %d\n"+
+			"EndCount: %d\n"+
+			"HourlyCount: %d\n"+
+			"CycleCount: %d\n"+
+			"MinCycle: %.3f\n"+
+			"AvgCycle: %.3f\n"+
+			"MaxCycle: %.3f\n"+
+			"=======================================\n",
+
+		item.TenantID,
+		item.CustomerID,
+		item.DeviceID,
+		item.MachineID,
+		item.Station,
+		item.Variant,
+		item.ProductionDay,
+		item.TenantShiftID,
+		item.ShiftTimingID,
+		item.ShiftHourSlotID,
+		item.SlotIndex,
+		item.SlotStart,
+		item.SlotEnd,
+		item.ActualStart,
+		item.ActualEnd,
+		item.StartProductionCount,
+		item.EndProductionCount,
+		item.HourlyProductionCount,
+		item.CycleCount,
+		item.MinCycleTimeSec,
+		item.AvgCycleTimeSec,
+		item.MaxCycleTimeSec,
+	)
+
+	// ========================================================
+	// SAVE HOURLY PRODUCTION
+	// ========================================================
+
+	err = s.Store.SaveHourlyProduction(
+		ctx,
+		tx,
+		item,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf(
+			"save hourly production: %w",
+			err,
+		)
+	}
+
+	// ========================================================
+	// COMMIT
+	// ========================================================
+
+	if err := tx.Commit(); err != nil {
+
+		return nil, fmt.Errorf(
+			"commit hourly production: %w",
+			err,
+		)
+	}
+
+	committed = true
+
+	return item, nil
+}
+
+// ============================================================
+// CHECK OVERNIGHT SHIFT
+// ============================================================
+//
+// Normal:
+//
+// 08:00 -> 20:00
+//
+// Overnight:
+//
+// 20:00 -> 08:00
+//
+// ============================================================
+
+func isOvernightShift(
+	shift *dto.ShiftInfoHR,
+) bool {
+
+	if shift == nil {
+		return false
+	}
+
+	start := clockSeconds(
+		shift.ShiftStart,
+	)
+
+	end := clockSeconds(
+		shift.ShiftEnd,
+	)
+
+	return start > end
+}
+
+// ============================================================
+// CLOCK TO SECONDS
+// ============================================================
+//
+// Only the clock part is considered.
+//
+// This works even when PostgreSQL returns:
+//
+// 0000-01-01T00:00:00Z
+//
+// because we ignore Year/Month/Day.
+//
+
+func clockSeconds(
+	t time.Time,
+) int {
+
+	return t.Hour()*3600 +
+		t.Minute()*60 +
+		t.Second()
+}
+
+// package service
+
+// import (
+// 	"context"
+// 	"fmt"
+// 	"time"
+
+// 	"github.com/rajeshbond/smart/internal/http/device/device_data/dto"
+// )
+
+// // ============================================================
+// // SAVE PREVIOUS HOUR
+// // ============================================================
+
+// func (s *Service) SavePreviousHour(
+// 	ctx context.Context,
+// 	req dto.SaveHourlyProductionRequest,
+// ) (*dto.HourlyProduction, error) {
+
+// 	// ========================================================
+// 	// VALIDATION
+// 	// ========================================================
+
+// 	if s == nil || s.Store == nil {
+// 		return nil, fmt.Errorf(
+// 			"hourly production service/store is nil",
+// 		)
+// 	}
+
+// 	if req.TenantID == "" {
+// 		return nil, fmt.Errorf(
+// 			"tenant_id is required",
+// 		)
+// 	}
+
+// 	if req.DeviceID == "" {
+// 		return nil, fmt.Errorf(
+// 			"device_id is required",
+// 		)
+// 	}
+
+// 	if req.MachineID == "" {
+// 		return nil, fmt.Errorf(
+// 			"machine_id is required",
+// 		)
+// 	}
+
+// 	if req.Station == "" {
+// 		return nil, fmt.Errorf(
+// 			"station is required",
+// 		)
+// 	}
+
+// 	// ========================================================
+// 	// CUSTOMER ID
+// 	// ========================================================
+
+// 	customerID := ""
+
+// 	if req.CustomerID != nil {
+// 		customerID = *req.CustomerID
+// 	}
+
+// 	// ========================================================
+// 	// VARIANT
+// 	// ========================================================
+
+// 	variant := ""
+
+// 	if req.Variant != nil {
+// 		variant = *req.Variant
+// 	}
+
+// 	// ========================================================
+// 	// CURRENT TIME - IST
+// 	// ========================================================
+
+// 	istLocation, err := time.LoadLocation(
+// 		"Asia/Kolkata",
+// 	)
+
+// 	if err != nil {
+// 		return nil, fmt.Errorf(
+// 			"load IST timezone: %w",
+// 			err,
+// 		)
+// 	}
+
+// 	now := time.Now().In(istLocation)
+
+// 	// ========================================================
+// 	// BEGIN TRANSACTION
+// 	// ========================================================
+
+// 	tx, err := s.Store.BeginTx(
+// 		ctx,
+// 		nil,
+// 	)
+
+// 	if err != nil {
+// 		return nil, fmt.Errorf(
+// 			"begin transaction: %w",
+// 			err,
+// 		)
+// 	}
+
+// 	committed := false
+
+// 	defer func() {
+// 		if !committed {
+// 			_ = tx.Rollback()
+// 		}
+// 	}()
+
+// 	// ========================================================
+// 	// CURRENT SHIFT
+// 	// ========================================================
+
+// 	shift, err := s.Store.GetCurrentShift(
+// 		ctx,
+// 		tx,
+// 		req.TenantID,
+// 		now,
+// 	)
+
+// 	if err != nil {
+// 		return nil, fmt.Errorf(
+// 			"get current shift: %w",
+// 			err,
+// 		)
+// 	}
+
+// 	if shift == nil {
+// 		return nil, fmt.Errorf(
+// 			"current shift is nil",
+// 		)
+// 	}
+
+// 	// ========================================================
+// 	// PREVIOUS HOUR SLOT
+// 	// ========================================================
+
+// 	slot, err := s.Store.GetPreviousHourSlot(
+// 		ctx,
+// 		tx,
+// 		req.TenantID,
+// 		shift.ShiftTimingID,
+// 		now,
+// 	)
+
+// 	if err != nil {
+// 		return nil, fmt.Errorf(
+// 			"get previous hour slot: %w",
+// 			err,
+// 		)
+// 	}
+
+// 	if slot == nil {
+// 		return nil, fmt.Errorf(
+// 			"previous hour slot is nil",
+// 		)
+// 	}
+
+// 	// ========================================================
+// 	// PRODUCTION DAY
+// 	// ========================================================
+
+// 	productionDay := now
+
+// 	if isOvernightShift(shift) {
+
+// 		currentClock := clockSeconds(now)
+
+// 		shiftStartClock := clockSeconds(
+// 			shift.ShiftStart,
+// 		)
+
+// 		// Example:
+// 		//
+// 		// Shift B = 20:00 -> 08:00
+// 		//
+// 		// Current time = 02:00
+// 		//
+// 		// Production day = previous date
+
+// 		if currentClock < shiftStartClock {
+
+// 			productionDay = productionDay.AddDate(
+// 				0,
+// 				0,
+// 				-1,
+// 			)
+// 		}
+// 	}
+
+// 	// ========================================================
+// 	// NORMALIZE PRODUCTION DAY
+// 	// ========================================================
+
+// 	productionDay = time.Date(
+// 		productionDay.Year(),
+// 		productionDay.Month(),
+// 		productionDay.Day(),
+// 		0,
+// 		0,
+// 		0,
+// 		0,
+// 		istLocation,
+// 	)
+
+// 	// ========================================================
+// 	// ACTUAL START
+// 	// ========================================================
+
+// 	actualStart := combineDateAndTime(
+// 		productionDay,
+// 		slot.SlotStart,
+// 		istLocation,
+// 	)
+
+// 	// ========================================================
+// 	// ACTUAL END
+// 	// ========================================================
+
+// 	actualEnd := combineDateAndTime(
+// 		productionDay,
+// 		slot.SlotEnd,
+// 		istLocation,
+// 	)
+
+// 	// ========================================================
+// 	// CROSS MIDNIGHT
+// 	// ========================================================
+
+// 	if !actualEnd.After(actualStart) {
+
+// 		actualEnd = actualEnd.AddDate(
+// 			0,
+// 			0,
+// 			1,
+// 		)
+// 	}
+
+// 	// ========================================================
+// 	// VALIDATE TIME RANGE
+// 	// ========================================================
+
+// 	if !actualEnd.After(actualStart) {
+// 		return nil, fmt.Errorf(
+// 			"invalid hourly slot: start=%v end=%v",
+// 			actualStart,
+// 			actualEnd,
+// 		)
+// 	}
+
+// 	// ========================================================
+// 	// PRODUCTION STATISTICS
+// 	// ========================================================
+
+// 	stats, err := s.Store.GetProductionStats(
+// 		ctx,
+// 		tx,
+
+// 		req.TenantID,
+// 		req.DeviceID,
+// 		req.Station,
+
+// 		actualStart,
+// 		actualEnd,
+// 	)
+
+// 	if err != nil {
+// 		return nil, fmt.Errorf(
+// 			"get production stats: %w",
+// 			err,
+// 		)
+// 	}
+
+// 	if stats == nil {
+// 		return nil, fmt.Errorf(
+// 			"production stats is nil",
+// 		)
+// 	}
+
+// 	// ========================================================
+// 	// CREATE HOURLY PRODUCTION
+// 	// ========================================================
+
+// 	item := &dto.HourlyProduction{
+
+// 		// IMPORTANT:
+// 		// tenant_id remains STRING
+
+// 		TenantID: req.TenantID,
+
+// 		CustomerID: customerID,
+
+// 		DeviceID: req.DeviceID,
+
+// 		MachineID: req.MachineID,
+
+// 		Station: req.Station,
+
+// 		Variant: variant,
+
+// 		ProductionDay: productionDay,
+
+// 		TenantShiftID: shift.TenantShiftID,
+
+// 		ShiftTimingID: shift.ShiftTimingID,
+
+// 		ShiftHourSlotID: slot.ShiftHourSlotID,
+
+// 		SlotIndex: slot.SlotIndex,
+
+// 		SlotStart: slot.SlotStart,
+
+// 		SlotEnd: slot.SlotEnd,
+
+// 		ActualStart: actualStart,
+
+// 		ActualEnd: actualEnd,
+
+// 		StartProductionCount: stats.StartProductionCount,
+
+// 		EndProductionCount: stats.EndProductionCount,
+
+// 		HourlyProductionCount: stats.HourlyProductionCount,
+
+// 		CycleCount: stats.CycleCount,
+
+// 		MinCycleTimeSec: stats.MinCycleTimeSec,
+
+// 		AvgCycleTimeSec: stats.AvgCycleTimeSec,
+
+// 		MaxCycleTimeSec: stats.MaxCycleTimeSec,
+// 	}
+
+// 	// ========================================================
+// 	// DEBUG LOG
+// 	// ========================================================
+
+// 	fmt.Printf(
+// 		"========== HOURLY PRODUCTION ==========\n"+
+// 			"TenantID: %s\n"+
+// 			"CustomerID: %s\n"+
+// 			"DeviceID: %s\n"+
+// 			"MachineID: %s\n"+
+// 			"Station: %s\n"+
+// 			"Variant: %s\n"+
+// 			"ProductionDay: %v\n"+
+// 			"ShiftID: %d\n"+
+// 			"ShiftTimingID: %d\n"+
+// 			"SlotID: %d\n"+
+// 			"SlotIndex: %d\n"+
+// 			"SlotStart: %v\n"+
+// 			"SlotEnd: %v\n"+
+// 			"ActualStart: %v\n"+
+// 			"ActualEnd: %v\n"+
+// 			"StartCount: %d\n"+
+// 			"EndCount: %d\n"+
+// 			"HourlyCount: %d\n"+
+// 			"CycleCount: %d\n"+
+// 			"MinCycle: %.3f\n"+
+// 			"AvgCycle: %.3f\n"+
+// 			"MaxCycle: %.3f\n"+
+// 			"=======================================\n",
+// 		item.TenantID,
+// 		item.CustomerID,
+// 		item.DeviceID,
+// 		item.MachineID,
+// 		item.Station,
+// 		item.Variant,
+// 		item.ProductionDay,
+// 		item.TenantShiftID,
+// 		item.ShiftTimingID,
+// 		item.ShiftHourSlotID,
+// 		item.SlotIndex,
+// 		item.SlotStart,
+// 		item.SlotEnd,
+// 		item.ActualStart,
+// 		item.ActualEnd,
+// 		item.StartProductionCount,
+// 		item.EndProductionCount,
+// 		item.HourlyProductionCount,
+// 		item.CycleCount,
+// 		item.MinCycleTimeSec,
+// 		item.AvgCycleTimeSec,
+// 		item.MaxCycleTimeSec,
+// 	)
+
+// 	// ========================================================
+// 	// SAVE HOURLY PRODUCTION
+// 	// ========================================================
+
+// 	// Uncomment when ready to save.
+// 	//
+// 	err = s.Store.SaveHourlyProduction(
+// 		ctx,
+// 		tx,
+// 		item,
+// 	)
+
+// 	if err != nil {
+// 		return nil, fmt.Errorf(
+// 			"save hourly production: %w",
+// 			err,
+// 		)
+// 	}
+
+// 	// ========================================================
+// 	// COMMIT
+// 	// ========================================================
+
+// 	if err := tx.Commit(); err != nil {
+// 		return nil, fmt.Errorf(
+// 			"commit hourly production: %w",
+// 			err,
+// 		)
+// 	}
+
+// 	committed = true
+
+// 	return item, nil
+// }
+
+// // ============================================================
+// // CHECK OVERNIGHT SHIFT
+// // ============================================================
+
+// func isOvernightShift(
+// 	shift *dto.ShiftInfoHR,
+// ) bool {
+
+// 	if shift == nil {
+// 		return false
+// 	}
+
+// 	start := clockSeconds(
+// 		shift.ShiftStart,
+// 	)
+
+// 	end := clockSeconds(
+// 		shift.ShiftEnd,
+// 	)
+
+// 	return start > end
+// }
+
+// // ============================================================
+// // CLOCK TO SECONDS
+// // ============================================================
+
+// func clockSeconds(
+// 	t time.Time,
+// ) int {
+
+// 	return t.Hour()*3600 +
+// 		t.Minute()*60 +
+// 		t.Second()
+// }
+
+// // ============================================================
+// // COMBINE DATE + TIME
+// // ============================================================
+
+// func combineDateAndTime(
+// 	date time.Time,
+// 	clock time.Time,
+// 	location *time.Location,
+// ) time.Time {
+
+// 	return time.Date(
+// 		date.Year(),
+// 		date.Month(),
+// 		date.Day(),
+
+// 		clock.Hour(),
+// 		clock.Minute(),
+// 		clock.Second(),
+// 		clock.Nanosecond(),
+
+// 		location,
+// 	)
+// }

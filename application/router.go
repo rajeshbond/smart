@@ -17,10 +17,15 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/rajeshbond/smart/cmd/service"
+	assemblymaster "github.com/rajeshbond/smart/internal/http/assembly_master"
 	"github.com/rajeshbond/smart/internal/http/command"
+	departmentmaster "github.com/rajeshbond/smart/internal/http/department_master"
 	devicedata "github.com/rajeshbond/smart/internal/http/device/device_data"
 	devicemaster "github.com/rajeshbond/smart/internal/http/device/device_master"
 	internalsetup "github.com/rajeshbond/smart/internal/http/internal_setup"
+	machine "github.com/rajeshbond/smart/internal/http/machine_imm"
+	"github.com/rajeshbond/smart/internal/http/mold"
+	"github.com/rajeshbond/smart/internal/http/permission"
 	"github.com/rajeshbond/smart/internal/http/shift"
 	shiftslot "github.com/rajeshbond/smart/internal/http/shift_slot"
 
@@ -90,6 +95,15 @@ func NewRouter(app *App) http.Handler {
 	usersModule := users.NewModule(app.DB.SQLDB, tokenAuth, userRoleModule.Service, tenantModule.Service)
 	r.Mount("/users", usersModule.Router())
 
+	// Permission router
+	permissionModule := permission.NewPermissionModule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/permission", permissionModule.Router())
+
+	// Depertment
+
+	departmentRoute := departmentmaster.NewDeptModule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/dept", departmentRoute.Router())
+
 	// Tenant shift
 	tenantShiftMoulde := tenantshifts.NewModule(app.DB.SQLDB, tokenAuth)
 	r.Mount("/tenantshift", tenantShiftMoulde.Router())
@@ -109,9 +123,26 @@ func NewRouter(app *App) http.Handler {
 	productionLogModule := devicedata.NewModule(app.DB.SQLDB, tokenAuth, shiftModule.Store)
 	r.Mount("/proddata", productionLogModule.Router())
 
+<<<<<<< HEAD
 	// Production Log hr
 
 	// prodeHR := NewModule(app.DB.SQLDB,tokenAuth)
+=======
+	// Mold Master
+
+	moldModule := mold.NewMoldModeule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/mold", moldModule.Router())
+
+	// Imm Machine
+
+	machineImmModule := machine.NewMachineModule(app.DB.SQLDB, tokenAuth)
+	r.Mount("/imachine", machineImmModule.Router())
+
+	// Assebly master
+
+	assemblyMasterModule := assemblymaster.NewModuleAssembly(app.DB.SQLDB, tokenAuth)
+	r.Mount("/assemblymaster", assemblyMasterModule.Router())
+>>>>>>> ac0246d3717753324e52eca15a89848498ea0cc7
 
 	// Route Mounts Ends here <---------------
 
@@ -133,3 +164,30 @@ func NewRouter(app *App) http.Handler {
 
 	return r
 }
+
+// Testing Router
+
+// assemblyMasterModule := assemblymaster.NewModuleAssembly(
+// 		app.DB.SQLDB,
+// 		tokenAuth,
+// 	)
+
+// 	assemblyMasterRouter := assemblyMasterModule.Router()
+
+// 	log.Println("========== MOUNTING ASSEMBLY MASTER ==========")
+
+// 	r.Mount("/assemblymaster", assemblyMasterRouter)
+
+// 	log.Println("========== ASSEMBLY MASTER MOUNTED ==========")
+
+// 	if err := chi.Walk(r, func(
+// 		method string,
+// 		route string,
+// 		handler http.Handler,
+// 		middlewares ...func(http.Handler) http.Handler,
+// 	) error {
+// 		log.Printf("ROOT ROUTE: %-6s %s", method, route)
+// 		return nil
+// 	}); err != nil {
+// 		log.Printf("Root route walk error: %v", err)
+// 	}
