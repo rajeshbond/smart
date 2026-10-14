@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/rajeshbond/smart/internal/auth"
 	"github.com/rajeshbond/smart/internal/auth/permission"
@@ -165,6 +166,9 @@ func (h *Handler) GetShiftProductionCount(w http.ResponseWriter, r *http.Request
 
 		return
 	}
+
+	// Variant is optional.
+	req.Variant = strings.TrimSpace(req.Variant)
 
 	if req.Limit <= 0 {
 		req.Limit = 1

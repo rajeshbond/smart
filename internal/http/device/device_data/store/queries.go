@@ -21,27 +21,28 @@ LIMIT $4;
 `
 
 const GetFirstShiftProductionCount = `
-SELECT production_count
-FROM assembly_production_log
-WHERE tenant_id=$1
-AND device_id=$2
-AND ($3='' OR station=$3)
-AND production_time BETWEEN $4 AND $5
-ORDER BY production_time ASC
-LIMIT 1;
+    SELECT production_count
+    FROM assembly_production_log
+    WHERE tenant_id = $1
+      AND device_id = $2
+      AND ($3 = '' OR station = $3)
+      AND production_time BETWEEN $4 AND $5
+      AND ($6 = '' OR variant = $6)
+    ORDER BY production_time ASC
+    LIMIT 1;
 `
 
 const GetFirstDayProductionCount = `
-SELECT
-    production_count
-FROM assembly_production_log
-WHERE tenant_id = $1
-  AND device_id = $2
-  AND ($3 = '' OR station = $3)
-  AND production_time >= $4
-  AND production_time < $5
-ORDER BY production_time ASC
-LIMIT 1;
+    SELECT production_count
+    FROM assembly_production_log
+    WHERE tenant_id = $1
+      AND device_id = $2
+      AND ($3 = '' OR station = $3)
+      AND production_time >= $4
+      AND production_time < $5
+      AND ($6 = '' OR variant = $6)
+    ORDER BY production_time ASC
+    LIMIT 1;
 `
 
 // const GetShiftStartProductionCount = `

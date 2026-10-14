@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"log"
 	"time"
 
 	"github.com/rajeshbond/smart/internal/http/device/device_data/dto"
@@ -74,70 +73,136 @@ func (s *Store) GetTenantCountByDevice(ctx context.Context, req dto.GetProductio
 	return &item, nil
 }
 
-func (s *Store) GetFirstShiftProductionCount(ctx context.Context, tenantCode string, deviceID string, station string,
-	shiftStart time.Time, shiftEnd time.Time) (int64, error) {
-
+func (s *Store) GetFirstShiftProductionCount(
+	ctx context.Context,
+	tenantCode string,
+	deviceID string,
+	station string,
+	variant string,
+	shiftStart time.Time,
+	shiftEnd time.Time,
+) (int64, error) {
 	var count int64
-
-	// log.Println("================================")
-	// log.Println("shiftStrt time", shiftStart)
-	// log.Println("shiftEnd time", shiftEnd)
-	// log.Println("================================")
 
 	err := s.db.QueryRowContext(
 		ctx,
 		GetFirstShiftProductionCount,
-		tenantCode,
-		deviceID,
-		station,
-		shiftStart,
-		shiftEnd,
+		tenantCode, // $1
+		deviceID,   // $2
+		station,    // $3
+		shiftStart, // $4
+		shiftEnd,   // $5
+		variant,    // $6
 	).Scan(&count)
 
-	if err == sql.ErrNoRows {
-		return 0, nil
-	}
-
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
 		return 0, err
 	}
-	// log.Println("Count----->", count)
+
 	return count, nil
 }
 
-func (s *Store) GetFirstDayProductionCount(ctx context.Context, tenantCode string, deviceID string, station string, dayStart time.Time, dayEnd time.Time) (int64, error) {
+// func (s *Store) GetFirstShiftProductionCount(ctx context.Context, tenantCode string, deviceID string, station string, variant string,
+// 	shiftStart time.Time, shiftEnd time.Time) (int64, error) {
 
+// 	var count int64
+
+// 	// log.Println("================================")
+// 	// log.Println("shiftStrt time", shiftStart)
+// 	// log.Println("shiftEnd time", shiftEnd)
+// 	// log.Println("================================")
+
+// 	err := s.db.QueryRowContext(
+// 		ctx,
+// 		GetFirstShiftProductionCount,
+// 		tenantCode,
+// 		deviceID,
+// 		station,
+// 		shiftStart,
+// 		shiftEnd,
+// 		variant,
+// 	).Scan(&count)
+
+// 	if err == sql.ErrNoRows {
+// 		return 0, nil
+// 	}
+
+// 	if err != nil {
+// 		return 0, err
+// 	}
+// 	log.Println("Shift 1st Count----->", count)
+// 	return count, nil
+// }
+
+func (s *Store) GetFirstDayProductionCount(
+	ctx context.Context,
+	tenantCode string,
+	deviceID string,
+	station string,
+	variant string,
+	dayStart time.Time,
+	dayEnd time.Time,
+) (int64, error) {
 	var count int64
 
 	err := s.db.QueryRowContext(
 		ctx,
 		GetFirstDayProductionCount,
-		tenantCode,
-		deviceID,
-		station,
-		dayStart,
-		dayEnd,
+		tenantCode, // $1
+		deviceID,   // $2
+		station,    // $3
+		dayStart,   // $4
+		dayEnd,     // $5
+		variant,    // $6
 	).Scan(&count)
 
 	if err != nil {
-
 		if err == sql.ErrNoRows {
 			return 0, nil
 		}
-
 		return 0, err
 	}
 
-	log.Println("================================")
-	log.Println("Tenant            :", tenantCode)
-	log.Println("Device            :", deviceID)
-	log.Println("Station           :", station)
-	log.Println("Production Day    :", dayStart, "->", dayEnd)
-	log.Println("First Day Counter :", count)
-	log.Println("================================")
-
 	return count, nil
 }
+
+// func (s *Store) GetFirstDayProductionCount(ctx context.Context, tenantCode string, deviceID string, station string, variant string, dayStart time.Time, dayEnd time.Time) (int64, error) {
+
+// 	var count int64
+
+// 	err := s.db.QueryRowContext(
+// 		ctx,
+// 		GetFirstDayProductionCount,
+// 		tenantCode,
+// 		deviceID,
+// 		station,
+// 		dayStart,
+// 		dayEnd,
+// 		variant,
+// 	).Scan(&count)
+
+// 	if err != nil {
+
+// 		if err == sql.ErrNoRows {
+// 			return 0, nil
+// 		}
+
+// 		return 0, err
+// 	}
+
+// 	log.Println("============data atataa atta at ====================")
+// 	log.Println("Tenant            :", tenantCode)
+// 	log.Println("Device            :", deviceID)
+// 	log.Println("Station           :", station)
+// 	log.Println("Production Day    :", dayStart, "->", dayEnd)
+// 	log.Println("First Day Counter :", count)
+// 	log.Println("================================")
+
+// 	return count, nil
+// }
 
 // func (s *Store) GetByTenantAndDeviceID(ctx context.Context, tenantID, deviceID string) (*dto.ProductionResponse, error) {
 
