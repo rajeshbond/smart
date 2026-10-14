@@ -123,6 +123,11 @@ func NewRouter(app *App) http.Handler {
 	productionLogModule := devicedata.NewModule(app.DB.SQLDB, tokenAuth, shiftModule.Store)
 	r.Mount("/proddata", productionLogModule.Router())
 
+<<<<<<< HEAD
+	// Production Log hr
+
+	// prodeHR := NewModule(app.DB.SQLDB,tokenAuth)
+=======
 	// Mold Master
 
 	moldModule := mold.NewMoldModeule(app.DB.SQLDB, tokenAuth)
@@ -137,6 +142,7 @@ func NewRouter(app *App) http.Handler {
 
 	assemblyMasterModule := assemblymaster.NewModuleAssembly(app.DB.SQLDB, tokenAuth)
 	r.Mount("/assemblymaster", assemblyMasterModule.Router())
+>>>>>>> ac0246d3717753324e52eca15a89848498ea0cc7
 
 	// Route Mounts Ends here <---------------
 
