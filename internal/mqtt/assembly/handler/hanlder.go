@@ -142,7 +142,7 @@ func (h *ProductionHandler) processProduction(
 
 		return
 	}
-
+	// log
 	// ========================================================
 	// Validate Event ID
 	// ========================================================
@@ -207,6 +207,7 @@ func (h *ProductionHandler) processProduction(
 	log.Printf(
 		"✅ Production Saved | Worker=%d | EventID=%s | Device=%s | Station=%s | Count=%d | Cycle Time=%.2f sec | Duration=%v",
 		workerID,
+		req.TenantID,
 		req.EventID,
 		req.DeviceID,
 		req.Station,

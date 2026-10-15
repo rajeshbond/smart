@@ -27,7 +27,7 @@ func (s *PostgresProductionStore) Save(
 		INSERT INTO assembly_production_log
 		(
 			event_id,
-			tenant_id,
+			tenant_code,
 			customer_id,
 			device_id,
 			machine_id,

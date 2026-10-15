@@ -109,6 +109,10 @@ func NewRouter(app *App) http.Handler {
 	productionLogModule := devicedata.NewModule(app.DB.SQLDB, tokenAuth, shiftModule.Store)
 	r.Mount("/proddata", productionLogModule.Router())
 
+	// Production Log hr
+
+	// prodeHR := NewModule(app.DB.SQLDB,tokenAuth)
+
 	// Route Mounts Ends here <---------------
 
 	// 4. Device master
