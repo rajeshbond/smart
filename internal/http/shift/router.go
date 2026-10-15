@@ -1,6 +1,7 @@
 package shift
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -20,6 +21,22 @@ func (m *Module) Router() chi.Router {
 		r.Post("/createshift", m.Handler.Create)
 
 	})
+
+	log.Println("========== ALL REGISTERED ROUTES ==========")
+
+	if err := chi.Walk(r, func(
+		method string,
+		route string,
+		handler http.Handler,
+		middlewares ...func(http.Handler) http.Handler,
+	) error {
+		log.Printf("HTTP ROUTE: %-6s %s", method, route)
+		return nil
+	}); err != nil {
+		log.Printf("Route walk error: %v", err)
+	}
+
+	log.Println("============================================")
 
 	return r
 }

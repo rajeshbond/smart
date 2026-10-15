@@ -12,6 +12,8 @@ type ProductionDTO struct {
 
 	CustomerID string `json:"customer_id,omitempty"`
 
+	Variant string `json:"variant"`
+
 	DeviceID string `json:"device_id"`
 
 	MachineID string `json:"machine_id"`
@@ -26,6 +28,28 @@ type ProductionDTO struct {
 
 	Timestamp string `json:"timestamp"`
 }
+
+<<<<<<< HEAD
+type ProductiontempDTO struct {
+	TenantID string `json:"tenant_id"`
+
+	CustomerID string `json:"customer_id,omitempty"`
+
+	DeviceID string `json:"device_id"`
+
+	MachineID string `json:"machine_id"`
+
+	Station string `json:"station"`
+
+	Count uint64 `json:"count"`
+
+	EventID string `json:"event_id"`
+
+	CycleTimeSec float64 `json:"cycle_time_sec"`
+
+	Timestamp string `json:"timestamp"`
+}
+<<<<<<< HEAD
 
 type ProductiontempDTO struct {
 	TenantID string `json:"tenant_id"`
@@ -46,3 +70,26 @@ type ProductiontempDTO struct {
 
 	Timestamp string `json:"timestamp"`
 }
+=======
+=======
+// type ProductiontempDTO struct {
+// 	TenantCode string `json:"tenant_code"`
+
+// 	CustomerID string `json:"customer_id,omitempty"`
+
+// 	DeviceID string `json:"device_id"`
+
+// 	MachineID string `json:"machine_id"`
+
+// 	Station string `json:"station"`
+
+// 	Count uint64 `json:"count"`
+
+// 	EventID string `json:"event_id"`
+
+// 	CycleTimeSec float64 `json:"cycle_time_sec"`
+
+// 	Timestamp string `json:"timestamp"`
+// }
+>>>>>>> ac0246d3717753324e52eca15a89848498ea0cc7
+>>>>>>> bc7a9106253fcb6f4c50ca6a5203fdb18d9e103a

@@ -6,19 +6,54 @@ import (
 	paho "github.com/eclipse/paho.mqtt.golang"
 )
 
-func (m *Module) RegisterMQTTAssemblyRoute(client paho.Client,
-	subscribe func(paho.Client, string, paho.MessageHandler)) {
+// ============================================================
+// REGISTER MQTT ROUTES
+// ============================================================
+
+func (m *Module) RegisterMQTTAssemblyRoute(
+	client paho.Client,
+	subscribe func(
+		paho.Client,
+		string,
+		paho.MessageHandler,
+	),
+) {
+
 	log.Println("------------------------------------------------")
 	log.Println("Registering Assembly MQTT Routes...")
 	log.Println("------------------------------------------------")
 
-	// Production
+	// ========================================================
+	// PRODUCTION
+	// ========================================================
 
-	subscribe(client, TopicProduction, m.Handler.ProductionHandler())
-	subscribe(client, TopicHeartbeat, m.Handler.HeartBeatHandler())
+	subscribe(
+		client,
+		TopicProduction,
+		m.Handlers.Production.ProductionHandler(),
+	)
 
-	// Heartbeat
-	// subscribe(client,TopicHeartbeat,m.Handler.ProductionHandler())
+	log.Printf(
+		"✅ Production Route Registered | Topic=%s",
+		TopicProduction,
+	)
 
+	// ========================================================
+	// HEARTBEAT
+	// ========================================================
+
+	subscribe(
+		client,
+		TopicHeartbeat,
+		m.Handlers.Heartbeat.HeartBeatHandler(),
+	)
+
+	log.Printf(
+		"✅ Heartbeat Route Registered | Topic=%s",
+		TopicHeartbeat,
+	)
+
+	log.Println("------------------------------------------------")
 	log.Println("Assembly MQTT Routes Registered")
+	log.Println("------------------------------------------------")
 }
