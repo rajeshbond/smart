@@ -25,7 +25,7 @@ func (s *Service) SavePreviousHour(
 		return nil, fmt.Errorf(
 			"hourly production service/store is nil",
 		)
-	}
+	}   
 
 	if req.TenantID == "" {
 		return nil, fmt.Errorf(

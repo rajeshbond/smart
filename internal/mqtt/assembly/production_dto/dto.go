@@ -8,14 +8,43 @@
 package dto
 
 type ProductionDTO struct {
-	TenantID     string  `json:"tenant_id"`
-	CustomerID   string  `json:"customer_id,omitempty"`
-	Variant      string  `json:"variant"`
-	DeviceID     string  `json:"device_id"`
-	MachineID    string  `json:"machine_id"`
-	Station      string  `json:"station"`
-	Count        uint64  `json:"count"`
-	EventID      string  `json:"event_id"`
+	TenantID string `json:"tenant_id"`
+
+	CustomerID string `json:"customer_id,omitempty"`
+
+	Variant string `json:"variant"`
+
+	DeviceID string `json:"device_id"`
+
+	MachineID string `json:"machine_id"`
+
+	Station string `json:"station"`
+
+	Count uint64 `json:"count"`
+
+	EventID string `json:"event_id"`
+
 	CycleTimeSec float64 `json:"cycle_time_sec"`
-	Timestamp    string  `json:"timestamp"`
+
+	Timestamp string `json:"timestamp"`
 }
+
+// type ProductiontempDTO struct {
+// 	TenantCode string `json:"tenant_code"`
+
+// 	CustomerID string `json:"customer_id,omitempty"`
+
+// 	DeviceID string `json:"device_id"`
+
+// 	MachineID string `json:"machine_id"`
+
+// 	Station string `json:"station"`
+
+// 	Count uint64 `json:"count"`
+
+// 	EventID string `json:"event_id"`
+
+// 	CycleTimeSec float64 `json:"cycle_time_sec"`
+
+// 	Timestamp string `json:"timestamp"`
+// }
