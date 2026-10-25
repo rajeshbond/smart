@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"log"
 	"time"
 
 	"github.com/rajeshbond/smart/internal/http/device/device_data/dto"
@@ -103,14 +104,14 @@ func (s *Store) GetFirstShiftProductionCount(ctx context.Context, tenantCode str
 		return 0, err
 	}
 	// log.Println("Count----->", count)
-	// log.Println("================================")
-	// log.Println("Tenant            :", tenantCode)
-	// log.Println("Device            :", deviceID)
-	// log.Println("Station           :", station)
-	// log.Println("Variant           :", variant)
-	// log.Println("Production Day    :", shiftStart, "->", shiftEnd)
-	// log.Println("Shifts 1st count Counter :", count)
-	// log.Println("================================")
+	log.Println("================================")
+	log.Println("Tenant            :", tenantCode)
+	log.Println("Device            :", deviceID)
+	log.Println("Station           :", station)
+	log.Println("Variant           :", variant)
+	log.Println("Production Day    :", shiftStart, "->", shiftEnd)
+	log.Println("Shifts 1st count Counter :", count)
+	log.Println("================================")
 	return count, nil
 }
 
@@ -138,14 +139,14 @@ func (s *Store) GetFirstDayProductionCount(ctx context.Context, tenantCode strin
 		return 0, err
 	}
 
-	// log.Println("================================")
-	// log.Println("Tenant            :", tenantCode)
-	// log.Println("Device            :", deviceID)
-	// log.Println("Station           :", station)
-	// log.Println("Variant           :", variant)
-	// log.Println("Production Day    :", dayStart, "->", dayEnd)
-	// log.Println("First Day Counter :", count)
-	// log.Println("================================")
+	log.Println("================================")
+	log.Println("Tenant            :", tenantCode)
+	log.Println("Device            :", deviceID)
+	log.Println("Station           :", station)
+	log.Println("Variant           :", variant)
+	log.Println("Production Day    :", dayStart, "->", dayEnd)
+	log.Println("First Day Counter :", count)
+	log.Println("================================")
 
 	return count, nil
 }

@@ -12,10 +12,7 @@ import (
 // SAVE PREVIOUS HOUR
 // ============================================================
 
-func (s *Service) SavePreviousHour(
-	ctx context.Context,
-	req dto.SaveHourlyProductionRequest,
-) (*dto.HourlyProduction, error) {
+func (s *Service) SavePreviousHour(ctx context.Context, req dto.SaveHourlyProductionRequest) (*dto.HourlyProduction, error) {
 
 	// ========================================================
 	// VALIDATION
@@ -25,7 +22,7 @@ func (s *Service) SavePreviousHour(
 		return nil, fmt.Errorf(
 			"hourly production service/store is nil",
 		)
-	}   
+	}
 
 	if req.TenantID == "" {
 		return nil, fmt.Errorf(
